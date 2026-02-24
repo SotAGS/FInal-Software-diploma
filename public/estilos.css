@@ -1,0 +1,545 @@
+/* =========================
+   RESET
+========================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background-color: #E8F5E9; /* light green background */
+  color: #2C2C2C;
+}
+
+/* =========================
+   LAYOUT GENERAL
+========================= */
+
+.layout {
+  display: flex;
+  flex-direction: column; /* header on top, content below */
+  min-height: 100vh;
+}
+
+.main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* page layout wrapper: sidebar + main */
+.page-body {
+  display: flex;
+  width: 100%;
+  flex: 1; /* take remaining height under header */
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+  width: 220px;
+  background-color: #1B5E20;
+  color: white;
+  padding: 20px;
+  height: calc(100vh - 64px); /* full height minus header */
+}
+
+.logo {
+  margin-bottom: 30px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.sidebar nav a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  margin-bottom: 15px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: 0.2s ease;
+}
+
+.sidebar nav a:hover {
+  background-color: #2E7D32;
+}
+
+/* =========================
+   MAIN
+========================= */
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+  background-color: #ffffff; /* white header */
+  color: #000000; /* black text */
+  padding: 12px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  height: 64px;
+}
+
+.header-left h2 {
+  margin: 0;
+  color: #000000;
+  font-size: 1.25rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-logout {
+  background-color: transparent;
+  color: #1B5E20; /* dark green text */
+  border: 1px solid rgba(27,94,32,0.15);
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.btn-logout:hover {
+  background-color: rgba(27,94,32,0.06);
+}
+
+/* =========================
+   CONTENIDO CENTRADO
+========================= */
+
+.content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* =========================
+   CARD PRINCIPAL
+========================= */
+
+.card-principal {
+  background: white;
+  width: 100%;
+  max-width: 800px;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   TÍTULO
+========================= */
+
+.card-principal h1 {
+  margin-bottom: 25px;
+  color: #1B5E20;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  transition: 0.2s;
+}
+
+input:focus {
+  border-color: #2E7D32;
+  outline: none;
+}
+
+/* =========================
+   TABLA
+========================= */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background-color: #F1F8F4;
+  color: #1B5E20;
+}
+
+tr:nth-child(even) {
+  background-color: #F9FBFA;
+}
+
+.total {
+  margin-top: 20px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  text-align: right;
+}
+
+/* =========================
+   BOTONES
+========================= */
+
+button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-right: 10px;
+}
+
+.btn-success {
+  background-color: #2E7D32;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #1B5E20;
+}
+
+.btn-secondary {
+  background-color: #9E9E9E;
+  color: white;
+}
+
+.btn-danger {
+  background-color: #C62828;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #A91B1B;
+}
+
+.btn-primary {
+  background-color: #1976D2;
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-right: 10px;
+}
+
+.btn-primary:hover {
+  background-color: #0D47A1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.btn-warning {
+  background-color: #F57C00;
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-right: 10px;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-warning:hover {
+  background-color: #E65100;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .card-principal {
+    padding: 20px;
+  }
+}
+
+/* =========================
+   SECTIONS / RECUADROS
+========================= */
+
+.section-box {
+  background: #ffffff;
+  border: 1px solid #E0E0E0;
+  border-radius: 10px;
+  padding: 14px;
+  margin: 18px 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.section-title {
+  margin: 0 0 8px 0;
+  color: #0B6623;
+  font-size: 1.05rem;
+}
+
+.btn-menu {
+  background: #1976D2;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+}
+
+.btn-menu:hover { background: #0D47A1; }
+
+.detalle td {
+  background: #FAFAFA;
+  border-top: 1px dashed #E0E0E0;
+}
+
+.alert {
+  background: #FFF3CD;
+  padding: 10px 14px;
+  border: 1px solid #FFE08A;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+/* =========================
+   RESET
+========================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background-color: #EEF2F1;
+  color: #2C2C2C;
+}
+
+/* =========================
+   LAYOUT GENERAL
+========================= */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+  width: 220px;
+  background-color: #1B5E20;
+  color: white;
+  padding: 20px;
+}
+
+.logo {
+  margin-bottom: 30px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.sidebar nav a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  margin-bottom: 15px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: 0.2s ease;
+}
+
+.sidebar nav a:hover {
+  background-color: #2E7D32;
+}
+
+/* =========================
+   MAIN
+========================= */
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+  background: white;
+  padding: 15px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* =========================
+   CONTENIDO CENTRADO
+========================= */
+
+.content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* =========================
+   CARD PRINCIPAL
+========================= */
+
+.card-principal {
+  background: white;
+  width: 100%;
+  max-width: 800px;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   TÍTULO
+========================= */
+
+.card-principal h1 {
+  margin-bottom: 25px;
+  color: #1B5E20;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  transition: 0.2s;
+}
+
+input:focus {
+  border-color: #2E7D32;
+  outline: none;
+}
+
+/* =========================
+   TABLA
+========================= */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background-color: #F1F8F4;
+  color: #1B5E20;
+}
+
+tr:nth-child(even) {
+  background-color: #F9FBFA;
+}
+
+.total {
+  margin-top: 20px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  text-align: right;
+}
+
+/* =========================
+   BOTONES
+========================= */
+
+button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-right: 10px;
+}
+
+.btn-success {
+  background-color: #2E7D32;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #1B5E20;
+}
+
+.btn-secondary {
+  background-color: #9E9E9E;
+  color: white;
+}
+
+.btn-danger {
+  background-color: #C62828;
+  color: white;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .card-principal {
+    padding: 20px;
+  }
+}

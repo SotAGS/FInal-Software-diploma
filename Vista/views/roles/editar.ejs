@@ -1,0 +1,121 @@
+<div class="form-container">
+  <h1><%= titulo %></h1>
+
+  <% const permisosPorModulo = {}; %>
+  <% catalogoPermisos.forEach(permiso => { %>
+    <% if (!permisosPorModulo[permiso.modulo]) { permisosPorModulo[permiso.modulo] = []; } %>
+    <% permisosPorModulo[permiso.modulo].push(permiso); %>
+  <% }); %>
+
+  <% if (error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/Roles/<%= rol.id %>" class="rol-form">
+    <div class="form-group">
+      <label for="nombre">Nombre del Rol:</label>
+      <input type="text" id="nombre" name="nombre" required value="<%= rol.nombre %>">
+    </div>
+
+    <div class="form-group">
+      <label for="descripcion">Descripción:</label>
+      <input type="text" id="descripcion" name="descripcion" value="<%= rol.descripcion || '' %>">
+    </div>
+
+    <div class="form-group">
+      <label>Permisos:</label>
+      <div class="treeview">
+        <% Object.keys(permisosPorModulo).forEach((modulo, index) => { %>
+          <details class="tree-node" open>
+            <summary>
+              <label class="modulo-label">
+                <input type="checkbox" class="modulo-toggle" data-group="<%= index %>">
+                <span><strong><%= modulo %></strong></span>
+              </label>
+            </summary>
+
+            <div class="tree-children">
+              <% permisosPorModulo[modulo].forEach(permiso => { %>
+                <label class="permiso-item">
+                  <input
+                    type="checkbox"
+                    name="permisos"
+                    value="<%= permiso.codigo %>"
+                    class="permiso-check"
+                    data-group="<%= index %>"
+                    <%= permisosSeleccionados.includes(permiso.codigo) ? 'checked' : '' %>
+                  >
+                  <span><strong><%= permiso.codigo %></strong> - <%= permiso.descripcion %></span>
+                </label>
+              <% }) %>
+            </div>
+          </details>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Actualizar Rol</button>
+      <a href="/Roles" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  .form-container { padding: 20px; max-width: 800px; }
+  .rol-form { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
+  .form-group { margin-bottom: 15px; }
+  .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+  .form-group input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+  .treeview { border: 1px solid #ddd; border-radius: 4px; padding: 10px; max-height: 360px; overflow-y: auto; background-color: #fafafa; }
+  .tree-node { border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 10px; background-color: white; }
+  .tree-node summary { list-style: none; cursor: pointer; padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
+  .tree-node summary::-webkit-details-marker { display: none; }
+  .modulo-label { display: flex !important; align-items: center; gap: 10px; margin: 0 !important; }
+  .tree-children { padding: 8px 14px 10px 26px; }
+  .permiso-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-weight: normal !important; }
+  .treeview input[type="checkbox"] { width: auto !important; margin: 0; flex: 0 0 auto; }
+  .treeview span { line-height: 1.4; }
+  .form-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn { flex: 1; padding: 10px 16px; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; font-weight: bold; text-align: center; }
+  .btn-primary { background-color: #2196f3; color: white; }
+  .btn-primary:hover { background-color: #1976d2; }
+  .btn-secondary { background-color: #666; color: white; }
+  .btn-secondary:hover { background-color: #555; }
+  .alert { padding: 12px 16px; margin-bottom: 20px; border-radius: 4px; }
+  .alert-error { background-color: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
+</style>
+
+<script>
+  const moduloToggles = document.querySelectorAll('.modulo-toggle');
+  const permisoChecks = document.querySelectorAll('.permiso-check');
+
+  const syncGroupState = (group) => {
+    const parent = document.querySelector(`.modulo-toggle[data-group="${group}"]`);
+    const children = document.querySelectorAll(`.permiso-check[data-group="${group}"]`);
+    const total = children.length;
+    const checked = Array.from(children).filter(c => c.checked).length;
+
+    parent.checked = checked === total && total > 0;
+    parent.indeterminate = checked > 0 && checked < total;
+  };
+
+  moduloToggles.forEach(toggle => {
+    toggle.addEventListener('change', () => {
+      const group = toggle.dataset.group;
+      const children = document.querySelectorAll(`.permiso-check[data-group="${group}"]`);
+      children.forEach(child => {
+        child.checked = toggle.checked;
+      });
+      syncGroupState(group);
+    });
+  });
+
+  permisoChecks.forEach(check => {
+    check.addEventListener('change', () => {
+      syncGroupState(check.dataset.group);
+    });
+  });
+
+  moduloToggles.forEach(toggle => syncGroupState(toggle.dataset.group));
+</script>

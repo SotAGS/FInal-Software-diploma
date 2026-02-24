@@ -1,0 +1,118 @@
+<div class="proveedores-container">
+  <div class="header-section">
+    <h1>Gestion de Proveedores</h1>
+    <a href="/Proveedores/crear" class="btn btn-primary">+ Crear Proveedor</a>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <% if (proveedores && proveedores.length > 0) { %>
+    <table class="proveedores-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Contacto</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% proveedores.forEach(proveedor => { %>
+          <tr>
+            <td><strong><%= proveedor.getNombre() %></strong></td>
+            <td><%= proveedor.getContacto() %></td>
+            <td>
+              <a href="/Proveedores/<%= proveedor.getId() %>/editar" class="btn btn-small btn-secondary">Editar</a>
+              <form method="POST" action="/Proveedores/<%= proveedor.getId() %>/eliminar" style="display: inline;" onsubmit="return confirm('¿Eliminar proveedor?');">
+                <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <p class="no-data">No hay proveedores registrados</p>
+  <% } %>
+</div>
+
+<style>
+  .proveedores-container {
+    padding: 20px;
+  }
+
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .btn-primary {
+    background-color: #1B5E20;
+    color: white;
+    padding: 8px 12px;
+    text-decoration: none;
+    border-radius: 6px;
+  }
+
+  .btn-primary:hover {
+    background-color: #2E7D32;
+  }
+
+  .proveedores-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .proveedores-table th,
+  .proveedores-table td {
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .btn-small {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .btn-danger {
+    background-color: #e53935;
+    color: white;
+    border: none;
+    border-radius: 6px;
+  }
+
+  .btn-danger:hover {
+    background-color: #c62828;
+  }
+
+  .alert-success {
+    background-color: #E8F5E9;
+    border: 1px solid #A5D6A7;
+    color: #1B5E20;
+  }
+
+  .alert-error {
+    background-color: #FFEBEE;
+    border: 1px solid #EF9A9A;
+    color: #B71C1C;
+  }
+
+  .alert {
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+
+  .no-data {
+    color: #666;
+    margin-top: 10px;
+  }
+</style>

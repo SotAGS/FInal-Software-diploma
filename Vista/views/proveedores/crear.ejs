@@ -1,0 +1,79 @@
+<div class="proveedores-container">
+  <div class="header-section">
+    <h1>Crear Proveedor</h1>
+    <a href="/Proveedores" class="btn btn-secondary">Volver</a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/Proveedores">
+    <label for="nombre">Nombre</label>
+    <input id="nombre" name="nombre" type="text" value="<%= nombre || '' %>" required />
+
+    <label for="contacto">Contacto</label>
+    <input id="contacto" name="contacto" type="text" value="<%= contacto || '' %>" required />
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Guardar</button>
+      <a href="/Proveedores" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  .proveedores-container {
+    padding: 20px;
+  }
+
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .form-actions {
+    margin-top: 10px;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+
+  .btn-primary {
+    background-color: #1B5E20;
+    color: white;
+    padding: 8px 12px;
+    text-decoration: none;
+    border-radius: 6px;
+  }
+
+  .btn-secondary {
+    background-color: #9E9E9E;
+    color: white;
+    padding: 8px 12px;
+    text-decoration: none;
+    border-radius: 6px;
+  }
+
+  .alert-error {
+    background-color: #FFEBEE;
+    border: 1px solid #EF9A9A;
+    color: #B71C1C;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+</style>

@@ -1,0 +1,198 @@
+<h1>Órdenes de Compra</h1>
+<% if (typeof session !== 'undefined' && session.message) { %>
+  <div class="alert"><%= session.message %></div>
+  <% session.message = null; %>
+<% } %>
+
+<a href="/Compras/crear" class="btn-success">Crear Orden</a>
+<table>
+  <tr>
+    <th>ID</th>
+    <th>Estado</th>
+    <th>Acciones</th>
+  </tr>
+  <% if (!ordenes || !ordenes.length) { %>
+    <tr><td colspan="3">No hay órdenes de compra</td></tr>
+  <% } else { %>
+  <% ordenes.forEach(function(o) { %>
+    <tr>
+      <td><%= o['id'] %></td>
+      <td><%= o.estado.constructor.name %></td>
+      <td>
+        <% if (o.items && o.items.length) { %>
+          <% if (o.estado.constructor.name === 'EstadoPendiente' || o.estado.constructor.name === 'EstadoParcialmenteCompleto') { %>
+            <% if (o.itemsRecibidos && o.itemsRecibidos.length > 0) { %>
+              <button class="btn-success" disabled title="Orden ya recibida">Recibir</button>
+            <% } else { %>
+              <form method="POST" action="/Compras/recibir/<%= o['id'] %>" style="display:inline">
+                <button class="btn-success" onclick="return confirm('¿Confirmar recepción de los productos de la orden <%= o['id'] %>?')">Recibir</button>
+              </form>
+            <% } %>
+          <% } else { %>
+            <button class="btn-success" disabled title="Orden ya recibida">Recibir</button>
+          <% } %>
+        <% } else { %>
+          <button class="btn-success" disabled title="La orden no tiene items">Recibir</button>
+        <% } %>
+
+        <form method="POST" action="/Compras/cancelar/<%= o['id'] %>" style="display:inline">
+          <button class="btn-danger" onclick="return confirm('¿Cancelar la orden <%= o['id'] %>?')">Cancelar</button>
+        </form>
+
+        <% if (o.estado.constructor.name === 'EstadoParcialmenteCompleto') { %>
+          <a href="/Compras/faltante/<%= o['id'] %>" class="btn-warning">Cerrar con faltante</a>
+          <form method="POST" action="/Compras/cerrar/<%= o['id'] %>" style="display:inline">
+            <button class="btn-primary" onclick="return confirm('¿Cerrar completo la orden <%= o['id'] %>?')">Cerrar completo</button>
+          </form>
+        <% } %>
+
+        <% if (o.estado.constructor.name === 'EstadoCompleto') { %>
+          <form method="POST" action="/Compras/cerrar/<%= o['id'] %>" style="display:inline">
+            <button class="btn-primary" onclick="return confirm('¿Cerrar la orden <%= o['id'] %>?')">Cerrar</button>
+          </form>
+        <% } %>
+      </td>
+    </tr>
+  <% }) %>
+  <% } %>
+</table>
+
+<hr>
+
+<div class="section-box">
+<h3 class="section-title">Completas</h3>
+<table>
+  <tr><th>ID</th><th>Estado</th><th>Menú</th></tr>
+  <% if (!completas || !completas.length) { %>
+    <tr><td colspan="3">No hay órdenes completas</td></tr>
+  <% } else { %>
+    <% completas.forEach(function(o) { %>
+      <tr>
+        <td><%= o['id'] %></td>
+        <td><%= o.estado.constructor.name %></td>
+        <td>
+          <button class="btn-menu" data-target="det-<%= o['id'] %>">Menú</button>
+        </td>
+      </tr>
+      <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
+        <td colspan="3">
+          <strong>Items Solicitados vs Recibidos:</strong>
+          <ul>
+            <% (o.items||[]).forEach(function(it){ 
+              const prod = (typeof productosMap !== 'undefined') ? productosMap[it.productoId] : null;
+              const recibido = o.itemsRecibidos.find(r => r.productoId === it.productoId);
+              const cantRecibida = recibido ? recibido.cantidadRecibida : 0;
+            %>
+              <li><%= prod ? prod.getNombre() : ('Producto #' + it.productoId) %> — Solicitado: <%= it.cantidad %>, Recibido: <%= cantRecibida %></li>
+            <% }) %>
+          </ul>
+          <strong>Proveedor:</strong> <% {
+            const prov = repoProveedor.buscarPorId(o.proveedorId);
+            if (prov) { %>
+              <%= prov.getNombre() %>
+            <% } else { %>
+              N/A
+            <% }} %>
+        </td>
+      </tr>
+    <% }) %>
+  <% } %>
+</table>
+</div>
+
+<div class="section-box">
+<h3 class="section-title">Con faltante</h3>
+<table>
+  <tr><th>ID</th><th>Estado</th><th>Menú</th></tr>
+  <% if (!cerradasConFaltante || !cerradasConFaltante.length) { %>
+    <tr><td colspan="3">No hay órdenes cerradas con faltante</td></tr>
+  <% } else { %>
+    <% cerradasConFaltante.forEach(function(o) { %>
+      <tr>
+        <td><%= o['id'] %></td>
+        <td><%= o.estado.constructor.name %></td>
+        <td><button class="btn-menu" data-target="det-<%= o['id'] %>">Menú</button></td>
+      </tr>
+      <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
+        <td colspan="3">
+          <strong>Items Solicitados vs Recibidos:</strong>
+          <ul>
+            <% (o.items||[]).forEach(function(it){ 
+              const prod = (typeof productosMap !== 'undefined') ? productosMap[it.productoId] : null;
+              const faltante = o.itemsFaltantes.find(f => f.productoId === it.productoId);
+              const cantRecibida = it.cantidad - (faltante ? faltante.cantidadFaltante : 0);
+            %>
+              <li><%= prod ? prod.getNombre() : ('Producto #' + it.productoId) %> — Solicitado: <%= it.cantidad %>, Recibido: <%= cantRecibida %></li>
+            <% }) %>
+          </ul>
+          <% if ((o.itemsFaltantes || []).length > 0) { %>
+            <strong>Faltantes:</strong>
+            <ul>
+              <% (o.itemsFaltantes||[]).forEach(function(ft){ 
+                const prod = (typeof productosMap !== 'undefined') ? productosMap[ft.productoId] : null;
+              %>
+                <li><%= prod ? prod.getNombre() : ('Producto #' + ft.productoId) %> — <%= ft.cantidadFaltante %></li>
+              <% }) %>
+            </ul>
+          <% } %>
+          <strong>Proveedor:</strong> <% {
+            const prov = repoProveedor.buscarPorId(o.proveedorId);
+            if (prov) { %>
+              <%= prov.getNombre() %>
+            <% } else { %>
+              N/A
+            <% }} %>
+        </td>
+      </tr>
+    <% }) %>
+  <% } %>
+</table>
+
+</div>
+
+<div class="section-box">
+<h3 class="section-title">Canceladas</h3>
+<table>
+  <tr><th>ID</th><th>Estado</th><th>Menú</th></tr>
+  <% if (!canceladas || !canceladas.length) { %>
+    <tr><td colspan="3">No hay órdenes canceladas</td></tr>
+  <% } else { %>
+    <% canceladas.forEach(function(o) { %>
+      <tr>
+        <td><%= o['id'] %></td>
+        <td><%= o.estado.constructor.name %></td>
+        <td><button class="btn-menu" data-target="det-<%= o['id'] %>">Menú</button></td>
+      </tr>
+      <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
+        <td colspan="3">
+          <strong>Items Solicitados:</strong>
+          <ul>
+            <% (o.items||[]).forEach(function(it){ 
+              const prod = (typeof productosMap !== 'undefined') ? productosMap[it.productoId] : null;
+            %>
+              <li><%= prod ? prod.getNombre() : ('Producto #' + it.productoId) %> — Cantidad: <%= it.cantidad %></li>
+            <% }) %>
+          </ul>
+          <strong>Proveedor:</strong> <% {
+            const prov = repoProveedor.buscarPorId(o.proveedorId);
+            if (prov) { %>
+              <%= prov.getNombre() %>
+            <% } else { %>
+              N/A
+            <% }} %>
+        </td>
+      </tr>
+    <% }) %>
+  <% } %>
+</table>
+</div>
+
+<script>
+  document.addEventListener('click', function(e){
+    if (e.target && e.target.classList.contains('btn-menu')){
+      const target = e.target.getAttribute('data-target');
+      const row = document.getElementById(target);
+      if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    }
+  });
+</script>

@@ -1,0 +1,52 @@
+{
+  "name": "final-software-diploma",
+  "version": "1.0.0",
+  "description": "Sistema de Gestión Empresarial con Auditoría y Reportes",
+  "main": "dist/app.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon --exec ts-node app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "migrate": "ts-node scripts/runMigrations.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SotAGS/FInal-Software-diploma.git"
+  },
+  "keywords": [
+    "gestión",
+    "auditoría",
+    "reportes",
+    "inventario"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SotAGS/FInal-Software-diploma/issues"
+  },
+  "homepage": "https://github.com/SotAGS/FInal-Software-diploma#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "ejs": "^3.0.2",
+    "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.17.3",
+    "mysql2": "^3.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.18.2",
+    "@types/jest": "^29.5.2",
+    "@types/node": "^25.3.0",
+    "jest": "^29.5.0",
+    "nodemon": "^3.1.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
+

@@ -1,0 +1,56 @@
+<section class="compras">
+
+  <h1>Gestión de Orden de Compra</h1>
+
+  <!-- Selección de proveedor -->
+  <div class="card">
+    <label>Proveedor:</label>
+    <select>
+      <option>Seleccionar proveedor</option>
+      <option>Proveedor 1</option>
+      <option>Proveedor 2</option>
+    </select>
+  </div>
+
+  <!-- Agregar productos -->
+  <div class="card agregar-producto">
+    <input type="text" placeholder="Buscar producto...">
+    <input type="number" placeholder="Cantidad">
+    <button class="btn-primary">Agregar</button>
+  </div>
+
+  <!-- Tabla detalle -->
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cant. Pedida</th>
+          <th>Cant. Recibida</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Harina</td>
+          <td>10</td>
+          <td>5</td>
+          <td><button class="btn-danger">X</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Estado -->
+  <div class="estado-orden">
+    Estado actual: <span class="badge pendiente">Pendiente</span>
+  </div>
+
+  <!-- Acciones -->
+  <div class="acciones">
+    <button class="btn-secondary">Cancelar Orden</button>
+    <button class="btn-warning">Cerrar con Faltante</button>
+    <button class="btn-success">Confirmar Recepción</button>
+  </div>
+
+</section>

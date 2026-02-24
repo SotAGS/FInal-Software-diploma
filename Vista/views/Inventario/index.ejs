@@ -1,0 +1,49 @@
+<h1>Módulo de Inventario</h1>
+
+<hr>
+
+<h2>Acciones disponibles</h2>
+
+<div class="acciones-inventario">
+  <% if (usuario && usuario.puede("CREAR_PRODUCTO")) { %>
+    <a class="btn btn-primary" href="/inventario/crear">Crear producto</a>
+  <% } %>
+
+  <a class="btn-stock" href="/inventario/listado">Ver stock</a>
+</div>
+
+<hr>
+
+<p>Desde aquí podrás gestionar los productos del sistema.</p>
+
+<style>
+  .acciones-inventario {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 14px 0;
+  }
+
+  .acciones-inventario .btn {
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-stock {
+    display: inline-block;
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: 1px solid #1B5E20;
+    background-color: #2E7D32;
+    color: #fff;
+    font-weight: bold;
+    transition: 0.2s ease;
+  }
+
+  .btn-stock:hover {
+    background-color: #1B5E20;
+    box-shadow: 0 3px 10px rgba(27, 94, 32, 0.25);
+    transform: translateY(-1px);
+  }
+</style>

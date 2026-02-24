@@ -1,0 +1,324 @@
+<div class="reportes-container">
+  <h1>Auditoría de Accesos</h1>
+  <p class="subtitle">Registro de logins, logouts e intentos fallidos (últimos 7 días)</p>
+
+  <% if (error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <% if (datos && datos.length > 0) { %>
+    <div class="report-section">
+      <div class="stats-summary">
+        <div class="stat-card">
+          <div class="stat-value"><%= datos.length %></div>
+          <div class="stat-label">Días Registrados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value"><%= datos.reduce((sum, d) => sum + d.accesos, 0) %></div>
+          <div class="stat-label">Total Accesos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value"><%= datos.reduce((sum, d) => sum + d.salidas, 0) %></div>
+          <div class="stat-label">Total Salidas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value"><%= datos.reduce((sum, d) => sum + d.intentos_fallidos, 0) %></div>
+          <div class="stat-label">Intentos Fallidos</div>
+        </div>
+      </div>
+
+      <table class="report-table audit-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Accesos</th>
+            <th>Salidas</th>
+            <th>Intentos Fallidos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% datos.forEach(row => { %>
+            <tr>
+              <td><strong><%= row.fecha %></strong></td>
+              <td><%= row.nombre || 'N/A' %></td>
+              <td><%= row.email || 'N/A' %></td>
+              <td>
+                <span class="badge badge-success"><%= row.accesos %></span>
+              </td>
+              <td>
+                <span class="badge badge-info"><%= row.salidas %></span>
+              </td>
+              <td>
+                <% if (row.intentos_fallidos > 0) { %>
+                  <span class="badge badge-danger"><%= row.intentos_fallidos %></span>
+                <% } else { %>
+                  <span class="badge badge-default">0</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>Tendencia de Accesos</h3>
+      <canvas id="tendenciaChart" height="60"></canvas>
+    </div>
+
+    <div class="report-section">
+      <h3>Actividad por Tipo</h3>
+      <canvas id="tipoChart" height="60"></canvas>
+    </div>
+  <% } else { %>
+    <p class="no-data">No hay datos disponibles para este reporte</p>
+  <% } %>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const datos = <%- JSON.stringify(datos || []) %>;
+  
+  if (datos.length > 0) {
+    // Gráfico 1: Tendencia de Accesos
+    const ctx1 = document.getElementById('tendenciaChart').getContext('2d');
+    
+    const fechas = datos.map(d => d.fecha);
+    const accesos = datos.map(d => d.accesos);
+    const salidas = datos.map(d => d.salidas);
+    const fallidos = datos.map(d => d.intentos_fallidos);
+    
+    new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: fechas,
+        datasets: [
+          {
+            label: 'Accesos',
+            data: accesos,
+            borderColor: 'rgba(76, 175, 80, 1)',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: 'Salidas',
+            data: salidas,
+            borderColor: 'rgba(33, 150, 243, 1)',
+            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: 'Intentos Fallidos',
+            data: fallidos,
+            borderColor: 'rgba(244, 67, 54, 1)',
+            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'top'
+          },
+          title: {
+            display: true,
+            text: 'Tendencia de Accesos - Últimos 7 Días'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // Gráfico 2: Totales por Tipo
+    const ctx2 = document.getElementById('tipoChart').getContext('2d');
+    
+    const totalAccesos = datos.reduce((sum, d) => sum + d.accesos, 0);
+    const totalSalidas = datos.reduce((sum, d) => sum + d.salidas, 0);
+    const totalFallidos = datos.reduce((sum, d) => sum + d.intentos_fallidos, 0);
+    
+    new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: ['Accesos', 'Salidas', 'Intentos Fallidos'],
+        datasets: [{
+          label: 'Cantidad',
+          data: [totalAccesos, totalSalidas, totalFallidos],
+          backgroundColor: [
+            'rgba(76, 175, 80, 0.7)',
+            'rgba(33, 150, 243, 0.7)',
+            'rgba(244, 67, 54, 0.7)'
+          ],
+          borderColor: [
+            'rgba(76, 175, 80, 1)',
+            'rgba(33, 150, 243, 1)',
+            'rgba(244, 67, 54, 1)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'x',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          },
+          title: {
+            display: true,
+            text: 'Actividad Total por Tipo'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+</script>
+
+<style>
+  .reportes-container {
+    padding: 20px;
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
+
+  .alert-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #c62828;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+  }
+
+  .badge-success {
+    background-color: #4caf50;
+  }
+
+  .badge-info {
+    background-color: #2196f3;
+  }
+
+  .badge-danger {
+    background-color: #f44336;
+  }
+
+  .badge-default {
+    background-color: #999;
+  }
+
+  .stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  .stat-card {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+  }
+
+  .report-section {
+    margin: 30px 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+  }
+
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .report-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .report-table tbody tr:hover {
+    background-color: #f5f5f5;
+  }
+
+  .audit-table tbody tr {
+    transition: background-color 0.2s;
+  }
+
+  .audit-table tbody tr:nth-child(odd) {
+    background-color: #fafafa;
+  }
+
+  .no-data {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+    font-style: italic;
+  }
+
+  h3 {
+    margin-top: 0;
+    color: #333;
+  }
+</style>

@@ -1,0 +1,60 @@
+<h1>Listado de Productos</h1>
+
+<% const puedeEditar = usuario && usuario.puede("EDITAR_PRODUCTO"); %>
+<% const puedeEliminar = usuario && usuario.puede("ELIMINAR_PRODUCTO"); %>
+
+<% if (productos && productos.length > 0) { %>
+  <table>
+    <tr>
+      <th>Nombre</th>
+      <th>Precio</th>
+      <th>Stock</th>
+      <% if (puedeEditar || puedeEliminar) { %>
+        <th>Acciones</th>
+      <% } %>
+    </tr>
+
+    <% productos.forEach(function(p) { %>
+      <tr>
+        <td><%= p.getNombre() %></td>
+        <td>$<%= p.getPrecio() %></td>
+        <td><%= p.getStock() %></td>
+
+        <% if (puedeEditar || puedeEliminar) { %>
+          <td>
+            <% if (puedeEliminar) { %>
+              <form method="POST" action="/inventario/eliminar/<%= p.getId() %>" style="display:inline">
+                <button class="btn-danger">Eliminar</button>
+              </form>
+            <% } %>
+            <% if (puedeEditar) { %>
+              <a class="btn-primary" href="/inventario/editar/<%= p.getId() %>">Editar</a>
+            <% } %>
+          </td>
+        <% } %>
+      </tr>
+    <% }) %>
+  </table>
+<% } else { %>
+  <div class="alert-empty">
+    No hay productos cargados en la base de datos.
+    <% if (usuario && usuario.puede("CREAR_PRODUCTO")) { %>
+      <a href="/inventario/crear">Crear primer producto</a>
+    <% } %>
+  </div>
+<% } %>
+
+<style>
+  .alert-empty {
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid #ddd;
+    background: #fafafa;
+    border-radius: 6px;
+  }
+
+  .alert-empty a {
+    margin-left: 8px;
+    font-weight: bold;
+  }
+</style>

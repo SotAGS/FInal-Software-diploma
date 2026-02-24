@@ -1,0 +1,199 @@
+<div class="reportes-container">
+  <h1>Desempeño de Compras</h1>
+  <p class="subtitle">Análisis de completitud de órdenes por proveedor (últimos 30 días)</p>
+
+  <% if (error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <% if (datos && datos.length > 0) { %>
+    <div class="report-section">
+      <div class="chart-container">
+        <canvas id="desempenioChart" height="80"></canvas>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Total Órdenes</th>
+            <th>Completas</th>
+            <th>Con Faltantes</th>
+            <th>Tasa Completitud</th>
+            <th>Tasa Faltantes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% datos.forEach(row => { %>
+            <tr>
+              <td><strong><%= row.proveedor %></strong></td>
+              <td><%= row.total_ordenes %></td>
+              <td class="text-success"><%= row.ordenes_completas %></td>
+              <td class="text-warning"><%= row.ordenes_faltantes %></td>
+              <td><span class="badge badge-success"><%= row.tasa_completitud %>%</span></td>
+              <td><span class="badge badge-warning"><%= row.tasa_faltantes %>%</span></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } else { %>
+    <p class="no-data">No hay datos disponibles para este reporte</p>
+  <% } %>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const datos = <%- JSON.stringify(datos || []) %>;
+  
+  if (datos.length > 0) {
+    const ctx = document.getElementById('desempenioChart').getContext('2d');
+    
+    const proveedores = datos.map(d => d.proveedor);
+    const tasaCompletitud = datos.map(d => parseFloat(d.tasa_completitud));
+    const tasaFaltantes = datos.map(d => parseFloat(d.tasa_faltantes));
+    
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: proveedores,
+        datasets: [
+          {
+            label: 'Tasa Completitud (%)',
+            data: tasaCompletitud,
+            backgroundColor: 'rgba(76, 175, 80, 0.7)',
+            borderColor: 'rgba(76, 175, 80, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Tasa Faltantes (%)',
+            data: tasaFaltantes,
+            backgroundColor: 'rgba(255, 152, 0, 0.7)',
+            borderColor: 'rgba(255, 152, 0, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'top'
+          },
+          title: {
+            display: true,
+            text: 'Desempeño de Proveedores - Últimos 30 Días'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            title: {
+              display: true,
+              text: 'Porcentaje (%)'
+            }
+          }
+        }
+      }
+    });
+  }
+</script>
+
+<style>
+  .reportes-container {
+    padding: 20px;
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .report-section {
+    margin: 30px 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 400px;
+    margin-bottom: 20px;
+  }
+
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .report-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .report-table tr:hover {
+    background-color: #f5f5f5;
+  }
+
+  .text-success {
+    color: #4caf50;
+    font-weight: bold;
+  }
+
+  .text-warning {
+    color: #ff9800;
+    font-weight: bold;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+  }
+
+  .badge-success {
+    background-color: #4caf50;
+  }
+
+  .badge-warning {
+    background-color: #ff9800;
+  }
+
+  .no-data {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+    font-style: italic;
+  }
+
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
+
+  .alert-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #c62828;
+  }
+</style>

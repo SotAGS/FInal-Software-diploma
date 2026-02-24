@@ -1,0 +1,58 @@
+<h1>Especificar Faltantes - Orden <%= orden.id %></h1>
+
+<div class="card-principal">
+  <p>Por favor especifica qué cantidad faltó de cada producto:</p>
+
+  <form method="POST" action="/Compras/faltante/<%= orden.id %>">
+    <table class="form-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Solicitado</th>
+          <th>Recibido</th>
+          <th>Faltante</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% (orden.items || []).forEach(function(item) { 
+          const producto = (typeof productosMap !== 'undefined') ? productosMap[item.productoId] : null;
+          const recibido = orden.itemsRecibidos.find(r => r.productoId === item.productoId);
+          const cantRecibida = recibido ? recibido.cantidadRecibida : 0;
+          const faltante = item.cantidad - cantRecibida;
+        %>
+          <tr>
+            <td><%= producto ? producto.getNombre() : 'Producto #' + item.productoId %></td>
+            <td><%= item.cantidad %></td>
+            <td><%= cantRecibida %></td>
+            <td>
+              <input type="number" name="faltante_<%= item.productoId %>" 
+                     value="<%= faltante %>" min="0" max="<%= item.cantidad %>"
+                     style="width: 80px;">
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 20px;">
+      <button type="submit" class="btn-success">Cerrar con Faltante</button>
+      <a href="/Compras" class="btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  .form-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  .form-table th, .form-table td { padding: 10px; text-align: left; border: 1px solid #ddd; }
+  .form-table th { background: #F1F8F4; color: #1B5E20; }
+  .form-table tr:nth-child(even) { background: #F9FBFA; }
+  .btn-secondary {
+    background-color: #9E9E9E;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-block;
+    margin-left: 10px;
+  }
+</style>

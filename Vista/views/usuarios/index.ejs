@@ -1,0 +1,166 @@
+<div class="usuarios-container">
+  <div class="header-section">
+    <h1>Gestión de Usuarios</h1>
+    <a href="/Usuarios/crear" class="btn btn-primary">+ Crear Usuario</a>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <% if (usuarios && usuarios.length > 0) { %>
+    <table class="usuarios-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% usuarios.forEach(usuario => { %>
+          <tr>
+            <td><strong><%= usuario.getNombre() %></strong></td>
+            <td><%= usuario.getEmail() %></td>
+            <td><span class="badge badge-info"><%= usuario.getRol().nombre %></span></td>
+            <td>
+              <a href="/Usuarios/<%= usuario.getId() %>/editar" class="btn btn-small btn-secondary">Editar</a>
+              <form method="POST" action="/Usuarios/<%= usuario.getId() %>/eliminar" style="display: inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar este usuario?');">
+                <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <p class="no-data">No hay usuarios registrados</p>
+  <% } %>
+</div>
+
+<style>
+  .usuarios-container {
+    padding: 20px;
+  }
+
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .usuarios-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .usuarios-table th,
+  .usuarios-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  .usuarios-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .usuarios-table tbody tr:hover {
+    background-color: #f9f9f9;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+  }
+
+  .btn-primary {
+    background-color: #2196f3;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: #1976d2;
+  }
+
+  .btn-secondary {
+    background-color: #666;
+    color: white;
+    font-size: 12px;
+  }
+
+  .btn-secondary:hover {
+    background-color: #555;
+  }
+
+  .btn-danger {
+    background-color: #f44336;
+    color: white;
+    font-size: 12px;
+  }
+
+  .btn-danger:hover {
+    background-color: #da190b;
+  }
+
+  .btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+  }
+
+  .badge-info {
+    background-color: #2196f3;
+  }
+
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
+
+  .alert-success {
+    background-color: #4caf50;
+    color: white;
+    border-left: 4px solid #388e3c;
+  }
+
+  .alert-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #c62828;
+  }
+
+  .no-data {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+    font-style: italic;
+  }
+</style>

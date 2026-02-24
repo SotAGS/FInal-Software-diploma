@@ -1,0 +1,70 @@
+<div class="roles-container">
+  <div class="header-section">
+    <h1>Menú de Roles</h1>
+    <a href="/Roles/crear" class="btn btn-primary">+ Crear Rol</a>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <% if (roles && roles.length > 0) { %>
+    <table class="roles-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Permisos</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% roles.forEach(rol => { %>
+          <tr>
+            <td><strong><%= rol.nombre %></strong></td>
+            <td><%= rol.descripcion || '-' %></td>
+            <td><%= rol.permisos.length %></td>
+            <td>
+              <% if (rol.nombre !== 'ADMIN') { %>
+                <a href="/Roles/<%= rol.id %>/editar" class="btn btn-small btn-secondary">Editar permisos</a>
+                <form method="POST" action="/Roles/<%= rol.id %>/eliminar" style="display: inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar este rol?');">
+                  <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+                </form>
+              <% } else { %>
+                <span class="badge-protegido">Protegido</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <p class="no-data">No hay roles registrados</p>
+  <% } %>
+</div>
+
+<style>
+  .roles-container { padding: 20px; }
+  .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .roles-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+  .roles-table th, .roles-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #eee; }
+  .roles-table th { background-color: #f0f0f0; font-weight: bold; color: #333; }
+  .roles-table tbody tr:hover { background-color: #f9f9f9; }
+  .btn { display: inline-block; padding: 8px 16px; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; font-weight: bold; transition: background-color 0.3s; }
+  .btn-primary { background-color: #2196f3; color: white; }
+  .btn-primary:hover { background-color: #1976d2; }
+  .btn-secondary { background-color: #666; color: white; font-size: 12px; }
+  .btn-secondary:hover { background-color: #555; }
+  .btn-danger { background-color: #f44336; color: white; font-size: 12px; }
+  .btn-danger:hover { background-color: #da190b; }
+  .btn-small { padding: 6px 12px; font-size: 12px; }
+  .badge-protegido { display: inline-block; padding: 6px 10px; border-radius: 4px; background-color: #e3f2fd; color: #1565c0; font-size: 12px; font-weight: bold; }
+  .alert { padding: 12px 16px; margin-bottom: 20px; border-radius: 4px; }
+  .alert-success { background-color: #4caf50; color: white; border-left: 4px solid #388e3c; }
+  .alert-error { background-color: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
+  .no-data { text-align: center; color: #999; padding: 40px; font-style: italic; }
+</style>

@@ -1,0 +1,53 @@
+<h1>Crear Orden de Compra</h1>
+
+<div style="display:flex;gap:40px">
+  <div>
+    <h3>Productos</h3>
+    <form method="POST" action="/Compras/cart/add">
+      <select name="productoId">
+        <% productos.forEach(function(p){ %>
+          <option value="<%= p.getId() %>"><%= p.getNombre() %> - $<%= p.getPrecio() %> (stock: <%= p.getStock() %>)</option>
+        <% }) %>
+      </select>
+      <input type="number" name="cantidad" value="1" min="1" />
+      <button class="btn-success">Añadir al carrito</button>
+    </form>
+  </div>
+
+  <div>
+    <h3>Carrito</h3>
+    <% if (cart && cart.length) { %>
+      <table>
+        <tr><th>Producto</th><th>Cantidad</th><th></th></tr>
+        <% cart.forEach(function(item){ 
+             const prod = productos.find(p => p.getId() === item.productoId);
+        %>
+          <tr>
+            <td><%= prod ? prod.getNombre() : ('#'+item.productoId) %></td>
+            <td><%= item.cantidad %></td>
+            <td>
+              <form method="POST" action="/Compras/cart/remove">
+                <input type="hidden" name="productoId" value="<%= item.productoId %>" />
+                <button class="btn-danger">Quitar</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </table>
+    <% } else { %>
+      <p>El carrito está vacío</p>
+    <% } %>
+
+    <h3>Proveedor</h3>
+    <form method="POST" action="/Compras/crear">
+      <select name="proveedorId">
+        <option value="">--Seleccionar proveedor--</option>
+        <% proveedores.forEach(function(pr){ %>
+          <option value="<%= pr.getId() %>"><%= pr.getNombre() %></option>
+        <% }) %>
+      </select>
+      <br/><br/>
+      <button class="btn-success">Enviar orden</button>
+    </form>
+  </div>
+</div>

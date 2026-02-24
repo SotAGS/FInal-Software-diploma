@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+
+    /* Estructura del proyecto */
+    "rootDir": "./",
+    "outDir": "./dist",
+
+    /* Entorno Node */
+    "module": "commonjs",
+    "target": "es6",
+    "lib": ["es6"],
+
+    /* Resolución */
+    "moduleResolution": "node",
+
+    /* Compatibilidad */
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    /* Tipos */
+    "types": ["node", "express", "express-session"],
+    "typeRoots": ["./node_modules/@types", "./types"],
+
+    /* Calidad */
+    "strict": true,
+    "skipLibCheck": true,
+
+    /* Mapas */
+    "sourceMap": true
+  },
+
+  "include": [
+    "*.ts",
+    "Controladoras/**/*.ts",
+    "Modelo/**/*.ts",
+    "Middlewares/**/*.ts",
+    "Rutas/**/*.ts",
+    "config/**/*.ts",
+    "scripts/**/*.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "__tests__"]
+}

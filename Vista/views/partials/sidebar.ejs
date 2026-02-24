@@ -1,0 +1,28 @@
+<aside class="sidebar">
+  <h2 class="logo">ALV</h2>
+  <nav>
+    <a href="/">Home</a>
+
+    <% if (usuario && (usuario.puede('CREAR_ORDEN_COMPRA') || usuario.puede('EDITAR_ORDEN_COMPRA'))) { %>
+      <a href="/Compras">Gestión de Compras</a>
+      <a href="/proveedores">Proveedores</a>
+    <% } %>
+
+    <% if (usuario && (usuario.puede('VER_STOCK') || usuario.puede('CREAR_PRODUCTO') || usuario.puede('EDITAR_PRODUCTO') || usuario.puede('ELIMINAR_PRODUCTO'))) { %>
+      <a href="/Inventario">Inventario</a>
+    <% } %>
+
+    <% if (usuario && usuario.puede('VER_REPORTES')) { %>
+      <a href="/Reportes">Reportes</a>
+    <% } %>
+
+    <% if (usuario && usuario.puede('GESTIONAR_USUARIOS')) { %>
+      <a href="/Usuarios">Usuarios</a>
+    <% } %>
+
+    <% if (usuario && usuario.getRol().nombre === "ADMIN") { %>
+      <a href="/Roles">Menú de Roles</a>
+    <% } %>
+  </nav>
+</aside>
+ 

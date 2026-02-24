@@ -1,0 +1,21 @@
+<h1>Editar Producto</h1>
+
+<form method="POST" action="/inventario/editar/<%= producto.getId() %>">
+
+  <div>
+    <label>Nombre</label>
+    <input type="text" name="nombre" value="<%= producto.getNombre() %>" disabled />
+  </div>
+
+  <div>
+    <label>Precio</label>
+    <input type="number" step="0.01" name="precio" value="<%= producto.getPrecio() %>" required />
+  </div>
+
+  <div>
+    <label>Stock</label>
+    <input type="number" name="stock" value="<%= producto.getStock() %>" required />
+  </div>
+
+  <button class="btn-success">Guardar cambios</button>
+</form>
