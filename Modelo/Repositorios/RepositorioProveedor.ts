@@ -1,8 +1,10 @@
 import { Proveedor } from "../Entidades/Proveedor";
 import { getPool } from "../../config/database";
+import { RepositorioProducto } from "./RepositorioProducto";
 
 export class RepositorioProveedor {
     private static instancia: RepositorioProveedor | null = null;
+    private readonly repoProducto = RepositorioProducto.obtenerInstancia();
 
     private constructor() {}
 
@@ -23,14 +25,17 @@ export class RepositorioProveedor {
         );
     }
 
-    async crear(nombre: string, contacto: string): Promise<Proveedor> {
+    async crear(nombre: string, contacto: string, productoIds: number[] = []): Promise<Proveedor> {
         const pool = getPool();
         const [result]: any = await pool.execute(
             "INSERT INTO proveedores (nombre, email, activo, fecha_creacion) VALUES (?, ?, TRUE, NOW())",
             [nombre, contacto]
         );
 
-        return new Proveedor(result.insertId, nombre, contacto, true);
+        const proveedorId = Number(result.insertId);
+        await this.repoProducto.asignarProveedorAProductos(proveedorId, productoIds);
+
+        return new Proveedor(proveedorId, nombre, contacto, true);
     }
 
     async obtenerTodos(incluirInactivos: boolean = false): Promise<Proveedor[]> {
@@ -63,12 +68,16 @@ export class RepositorioProveedor {
         return this.rowToProveedor((rows as any[])[0]);
     }
 
-    async actualizar(id: number, nombre: string, contacto: string): Promise<boolean> {
+    async actualizar(id: number, nombre: string, contacto: string, productoIds: number[] = []): Promise<boolean> {
         const pool = getPool();
         const [result]: any = await pool.execute(
             "UPDATE proveedores SET nombre = ?, email = ? WHERE id = ?",
             [nombre, contacto, id]
         );
+
+        if (result.affectedRows > 0) {
+            await this.repoProducto.asignarProveedorAProductos(id, productoIds);
+        }
 
         return result.affectedRows > 0;
     }
@@ -79,6 +88,10 @@ export class RepositorioProveedor {
             "UPDATE proveedores SET activo = FALSE WHERE id = ?",
             [id]
         );
+
+        if (result.affectedRows > 0) {
+            await this.repoProducto.asignarProveedorAProductos(id, []);
+        }
 
         return result.affectedRows > 0;
     }
@@ -91,5 +104,12 @@ export class RepositorioProveedor {
         );
 
         return result.affectedRows > 0;
+    }
+
+    async obtenerProductosIdsPorProveedor(id: number): Promise<number[]> {
+        const productos = await this.repoProducto.obtenerTodos(true);
+        return productos
+            .filter(p => p.getProveedorId() === id)
+            .map(p => p.getId());
     }
 }

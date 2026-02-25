@@ -16,6 +16,17 @@
       <label for="contacto">Contacto</label>
       <input id="contacto" name="contacto" type="text" value="<%= proveedor.getContacto() %>" required />
 
+      <label for="productoIds">Productos de esta marca</label>
+      <select id="productoIds" name="productoIds" multiple size="8">
+        <% (productos || []).forEach(function(producto){ %>
+          <% const selected = (productosSeleccionados || []).includes(producto.getId()); %>
+          <option value="<%= producto.getId() %>" <%= selected ? 'selected' : '' %>>
+            <%= producto.getNombre() %>
+          </option>
+        <% }) %>
+      </select>
+      <small>Mantener Ctrl (o Cmd) para seleccionar varios.</small>
+
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">Guardar cambios</button>
         <a href="/Proveedores" class="btn btn-secondary">Cancelar</a>
@@ -53,6 +64,21 @@
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 6px;
+    margin-bottom: 12px;
+  }
+
+  select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: #fff;
+  }
+
+  small {
+    display: block;
+    color: #666;
     margin-bottom: 12px;
   }
 

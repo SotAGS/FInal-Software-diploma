@@ -1,12 +1,27 @@
 <h1>Crear Producto</h1>
 
+<% if (typeof error !== 'undefined' && error) { %>
+  <div style="margin-bottom:12px;padding:10px 12px;border:1px solid #ffcdd2;background:#ffebee;color:#c62828;border-radius:6px;">
+    <%= error %>
+  </div>
+<% } %>
+
 <form method="POST" action="/inventario/crear">
 
-  <input type="text" name="nombre" placeholder="Nombre" required />
+  <input type="text" name="nombre" placeholder="Nombre" value="<%= typeof nombre !== 'undefined' ? nombre : '' %>" required />
 
-  <input type="number" name="precio" placeholder="Precio" required />
+  <input type="number" name="precio" placeholder="Precio" value="<%= typeof precio !== 'undefined' ? precio : '' %>" required />
 
-  <input type="number" name="stock" placeholder="Stock" required />
+  <input type="number" name="stock" placeholder="Stock" value="<%= typeof stock !== 'undefined' ? stock : '' %>" required />
+
+  <select name="proveedorId" required>
+    <option value="">-- Seleccionar proveedor --</option>
+    <% (proveedores || []).forEach(function(pr){ %>
+      <option value="<%= pr.getId() %>" <%= String(proveedorId || '') === String(pr.getId()) ? 'selected' : '' %>>
+        <%= pr.getNombre() %>
+      </option>
+    <% }) %>
+  </select>
 
   <button class="btn-success">Guardar</button>
 </form>

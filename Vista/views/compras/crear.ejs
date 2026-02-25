@@ -1,5 +1,11 @@
 <h1>Crear Orden de Compra</h1>
 
+<% if (typeof error !== 'undefined' && error) { %>
+  <div style="margin: 10px 0; padding: 10px; border: 1px solid #ef9a9a; background: #ffebee; color: #b71c1c; border-radius: 6px;">
+    <%= error %>
+  </div>
+<% } %>
+
 <div style="display:flex;gap:40px">
   <div>
     <h3>Productos</h3>
@@ -46,6 +52,9 @@
           <option value="<%= pr.getId() %>"><%= pr.getNombre() %></option>
         <% }) %>
       </select>
+      <% if (cart && cart.length && (!proveedores || proveedores.length === 0)) { %>
+        <p style="color:#b71c1c;">No hay marcas/proveedores disponibles para los productos del carrito.</p>
+      <% } %>
       <br/><br/>
       <button class="btn-success">Enviar orden</button>
     </form>

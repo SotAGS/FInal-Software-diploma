@@ -2,39 +2,46 @@
 
 <% const puedeEditar = usuario && usuario.puede("EDITAR_PRODUCTO"); %>
 <% const puedeEliminar = usuario && usuario.puede("ELIMINAR_PRODUCTO"); %>
+<% const puedeCrear = usuario && usuario.puede("CREAR_PRODUCTO"); %>
 
-<% if (productos && productos.length > 0) { %>
+<% if (success) { %>
+  <div class="alert-success"><%= success %></div>
+<% } %>
+<% if (error) { %>
+  <div class="alert-error"><%= error %></div>
+<% } %>
+
+<h2>Productos Activos</h2>
+<% if (productosActivos && productosActivos.length > 0) { %>
   <table>
     <tr>
       <th>Nombre</th>
       <th>Precio</th>
       <th>Stock</th>
-      <th>Estado</th>
+      <th>Proveedor</th>
       <% if (puedeEditar || puedeEliminar) { %>
         <th>Acciones</th>
       <% } %>
     </tr>
 
-    <% productos.forEach(function(p) { %>
+    <% productosActivos.forEach(function(p) { %>
       <tr>
         <td><%= p.getNombre() %></td>
         <td>$<%= p.getPrecio() %></td>
         <td><%= p.getStock() %></td>
-        <td><%= p.esActivo() ? 'Activo' : 'Eliminado' %></td>
+        <td><%= p.getProveedorId() ? (proveedoresMap[p.getProveedorId()] || ('#'+p.getProveedorId())) : 'Sin proveedor' %></td>
 
         <% if (puedeEditar || puedeEliminar) { %>
           <td>
-            <% if (puedeEditar && p.esActivo()) { %>
+            <% if (puedeEditar) { %>
               <a class="btn-primary" href="/inventario/editar/<%= p.getId() %>">Editar</a>
             <% } %>
-            <% if (puedeEliminar && p.esActivo()) { %>
+            <% if (puedeEliminar) { %>
               <form method="POST" action="/inventario/eliminar/<%= p.getId() %>" style="display:inline">
-                <button class="btn-danger">Eliminar</button>
+                <button class="btn-danger" type="submit">Eliminar</button>
               </form>
-            <% } %>
-            <% if (puedeEliminar && !p.esActivo()) { %>
-              <form method="POST" action="/inventario/recuperar/<%= p.getId() %>" style="display:inline">
-                <button class="btn-primary" type="submit">Recuperar</button>
+              <form method="POST" action="/inventario/eliminar-definitivo/<%= p.getId() %>" style="display:inline" onsubmit="return confirm('¿Eliminar definitivamente este producto? Esta acción no se puede deshacer.');">
+                <button class="btn-danger" type="submit">Eliminar definitivo</button>
               </form>
             <% } %>
           </td>
@@ -44,11 +51,47 @@
   </table>
 <% } else { %>
   <div class="alert-empty">
-    No hay productos cargados en la base de datos.
-    <% if (usuario && usuario.puede("CREAR_PRODUCTO")) { %>
+    No hay productos activos.
+    <% if (puedeCrear) { %>
       <a href="/inventario/crear">Crear primer producto</a>
     <% } %>
   </div>
+<% } %>
+
+<h2 style="margin-top:24px;">Productos Eliminados (Recuperables)</h2>
+<% if (productosEliminados && productosEliminados.length > 0) { %>
+  <table>
+    <tr>
+      <th>Nombre</th>
+      <th>Precio</th>
+      <th>Stock</th>
+      <th>Proveedor</th>
+      <% if (puedeEliminar) { %>
+        <th>Acciones</th>
+      <% } %>
+    </tr>
+
+    <% productosEliminados.forEach(function(p) { %>
+      <tr>
+        <td><%= p.getNombre() %></td>
+        <td>$<%= p.getPrecio() %></td>
+        <td><%= p.getStock() %></td>
+        <td><%= p.getProveedorId() ? (proveedoresMap[p.getProveedorId()] || ('#'+p.getProveedorId())) : 'Sin proveedor' %></td>
+        <% if (puedeEliminar) { %>
+          <td>
+            <form method="POST" action="/inventario/recuperar/<%= p.getId() %>" style="display:inline">
+              <button class="btn-primary" type="submit">Recuperar</button>
+            </form>
+            <form method="POST" action="/inventario/eliminar-definitivo/<%= p.getId() %>" style="display:inline" onsubmit="return confirm('¿Eliminar definitivamente este producto? Esta acción no se puede deshacer.');">
+              <button class="btn-danger" type="submit">Eliminar definitivo</button>
+            </form>
+          </td>
+        <% } %>
+      </tr>
+    <% }) %>
+  </table>
+<% } else { %>
+  <div class="alert-empty">No hay productos eliminados para recuperar.</div>
 <% } %>
 
 <style>
@@ -63,5 +106,23 @@
   .alert-empty a {
     margin-left: 8px;
     font-weight: bold;
+  }
+
+  .alert-success {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid #c8e6c9;
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 6px;
+  }
+
+  .alert-error {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid #ffcdd2;
+    background: #ffebee;
+    color: #c62828;
+    border-radius: 6px;
   }
 </style>

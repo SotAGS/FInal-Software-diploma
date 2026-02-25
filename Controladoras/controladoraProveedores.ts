@@ -1,7 +1,17 @@
 import { Response } from "express";
 import { RepositorioProveedor } from "../Modelo/Repositorios/RepositorioProveedor";
+import { RepositorioProducto } from "../Modelo/Repositorios/RepositorioProducto";
 
 const repoProveedor = RepositorioProveedor.obtenerInstancia();
+const repoProducto = RepositorioProducto.obtenerInstancia();
+
+const normalizarProductoIds = (valor: any): number[] => {
+    if (!valor) return [];
+    const lista = Array.isArray(valor) ? valor : [valor];
+    return lista
+        .map(v => Number(v))
+        .filter(v => Number.isFinite(v) && v > 0);
+};
 
 /* ===========================
    LISTAR PROVEEDORES
@@ -32,12 +42,17 @@ export const listarProveedores = async (req: any, res: Response): Promise<void> 
 /* ===========================
    MOSTRAR FORMULARIO CREAR
 =========================== */
-export const mostrarFormularioCrearProveedor = (req: any, res: Response): void => {
+export const mostrarFormularioCrearProveedor = async (req: any, res: Response): Promise<void> => {
+    const productos = await repoProducto.obtenerTodos(true);
+    const productosDisponibles = productos.filter(p => p.esActivo() && !p.getProveedorId());
+
     res.render("proveedores/crear", {
         titulo: "Crear Proveedor",
         error: null,
         nombre: "",
-        contacto: ""
+        contacto: "",
+        productos: productosDisponibles,
+        productosSeleccionados: []
     });
 };
 
@@ -46,17 +61,22 @@ export const mostrarFormularioCrearProveedor = (req: any, res: Response): void =
 =========================== */
 export const crearProveedor = async (req: any, res: Response): Promise<void> => {
     const { nombre, contacto } = req.body;
+    const productoIds = normalizarProductoIds(req.body.productoIds);
+    const productos = await repoProducto.obtenerTodos(true);
+    const productosDisponibles = productos.filter(p => p.esActivo() && !p.getProveedorId());
 
     if (!nombre || !contacto) {
         return res.status(400).render("proveedores/crear", {
             titulo: "Crear Proveedor",
             error: "Debe completar todos los campos",
             nombre: nombre || "",
-            contacto: contacto || ""
+            contacto: contacto || "",
+            productos: productosDisponibles,
+            productosSeleccionados: productoIds
         });
     }
 
-    await repoProveedor.crear(nombre, contacto);
+    await repoProveedor.crear(nombre, contacto, productoIds);
     res.redirect("/Proveedores?success=Proveedor creado correctamente");
 };
 
@@ -71,10 +91,16 @@ export const mostrarFormularioEditarProveedor = async (req: any, res: Response):
         return res.redirect("/Proveedores?error=Proveedor no encontrado");
     }
 
+    const productos = await repoProducto.obtenerTodos(true);
+    const productosDisponibles = productos.filter(p => p.esActivo() && (!p.getProveedorId() || p.getProveedorId() === id));
+    const productosSeleccionados = await repoProveedor.obtenerProductosIdsPorProveedor(id);
+
     res.render("proveedores/editar", {
         titulo: "Editar Proveedor",
         error: null,
-        proveedor
+        proveedor,
+        productos: productosDisponibles,
+        productosSeleccionados
     });
 };
 
@@ -84,16 +110,21 @@ export const mostrarFormularioEditarProveedor = async (req: any, res: Response):
 export const actualizarProveedor = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
     const { nombre, contacto } = req.body;
+    const productoIds = normalizarProductoIds(req.body.productoIds);
+    const productos = await repoProducto.obtenerTodos(true);
+    const productosDisponibles = productos.filter(p => p.esActivo() && (!p.getProveedorId() || p.getProveedorId() === id));
 
     if (!nombre || !contacto) {
         return res.status(400).render("proveedores/editar", {
             titulo: "Editar Proveedor",
             error: "Debe completar todos los campos",
-            proveedor: await repoProveedor.buscarPorId(id, true)
+            proveedor: await repoProveedor.buscarPorId(id, true),
+            productos: productosDisponibles,
+            productosSeleccionados: productoIds
         });
     }
 
-    const actualizado = await repoProveedor.actualizar(id, nombre, contacto);
+    const actualizado = await repoProveedor.actualizar(id, nombre, contacto, productoIds);
     if (!actualizado) {
         return res.redirect("/Proveedores?error=Proveedor no encontrado");
     }

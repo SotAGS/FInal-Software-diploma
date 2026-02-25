@@ -5,7 +5,8 @@ export class Producto {
         private nombre: string,
         private precio: number,
         private stock: number,
-        private activo: boolean = true
+        private activo: boolean = true,
+        private proveedorId?: number
     ) {}
 
     getId(): number {
@@ -28,6 +29,10 @@ export class Producto {
         return this.activo;
     }
 
+    getProveedorId(): number | undefined {
+        return this.proveedorId;
+    }
+
     setNombre(nombre: string): void {
         this.nombre = nombre;
     }
@@ -38,5 +43,9 @@ export class Producto {
 
     setStock(stock: number): void {
         this.stock = stock;
+    }
+
+    setProveedorId(proveedorId?: number): void {
+        this.proveedorId = proveedorId;
     }
 }

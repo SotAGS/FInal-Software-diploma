@@ -7,6 +7,29 @@ const repoOrden = RepositorioOrdenCompra.obtenerInstancia();
 const repoProveedor = RepositorioProveedor.obtenerInstancia();
 const repoProducto = RepositorioProducto.obtenerInstancia();
 
+const calcularProveedoresDisponibles = async (cart: any[]): Promise<any[]> => {
+    const proveedores = await repoProveedor.obtenerTodos();
+    if (!cart || cart.length === 0) {
+        return proveedores;
+    }
+
+    const productoIds = Array.from(new Set(cart.map((item: any) => Number(item.productoId)).filter((id: number) => Number.isFinite(id) && id > 0)));
+    if (!productoIds.length) {
+        return [];
+    }
+
+    const proveedoresIds = new Set<number>();
+    for (const productoId of productoIds) {
+        const producto = await repoProducto.buscarPorId(productoId, true);
+        const proveedorId = producto?.getProveedorId();
+        if (proveedorId) {
+            proveedoresIds.add(proveedorId);
+        }
+    }
+
+    return proveedores.filter(pr => proveedoresIds.has(pr.getId()));
+};
+
 export const listarOrdenes = async (req: any, res: Response): Promise<void> => {
     const ordenes = await repoOrden.obtenerTodos();
     const activas = ordenes.filter(o => {
@@ -43,9 +66,9 @@ export const listarOrdenes = async (req: any, res: Response): Promise<void> => {
 export const mostrarCrearOrden = async (req: any, res: Response): Promise<void> => {
     // Mostrar productos para añadir al carrito y proveedores
     const productos = await repoProducto.obtenerTodos();
-    const proveedores = await repoProveedor.obtenerTodos();
     const cart = req.session?.cart || [];
-    res.render("compras/crear", { productos, proveedores, cart });
+    const proveedores = await calcularProveedoresDisponibles(cart);
+    res.render("compras/crear", { productos, proveedores, cart, error: null });
 };
 
 export const agregarAlCarrito = (req: any, res: Response): void => {
@@ -85,13 +108,41 @@ export const crearOrden = async (req: any, res: Response): Promise<void> => {
     const usuarioSesionId = Number(req.session?.usuarioId);
     const usuarioCreadorId = Number.isFinite(usuarioSesionId) && usuarioSesionId > 0 ? usuarioSesionId : undefined;
     const cart = req.session?.cart || [];
+    const productos = await repoProducto.obtenerTodos();
+    const proveedoresDisponibles = await calcularProveedoresDisponibles(cart);
     console.log("CREAR ORDEN - Cart:", cart, "Proveedor:", proveedorId);
     if (!cart.length) {
         console.log("CREAR ORDEN - Carrito vacío");
-        const productos = await repoProducto.obtenerTodos();
-        return res.render("compras/crear", { productos, proveedores: await repoProveedor.obtenerTodos(), cart, error: "El carrito está vacío" });
+        return res.render("compras/crear", { productos, proveedores: proveedoresDisponibles, cart, error: "El carrito está vacío" });
     }
+
+    if (!proveedorId) {
+        return res.render("compras/crear", { productos, proveedores: proveedoresDisponibles, cart, error: "Debe seleccionar una marca/proveedor" });
+    }
+
     const items = cart.map((i: any) => ({ productoId: Number(i.productoId), cantidad: Number(i.cantidad) }));
+
+    const productosDelCarrito = await Promise.all(items.map((i: { productoId: number }) => repoProducto.buscarPorId(i.productoId, true)));
+    const hayProductoNoAsociado = productosDelCarrito.some(p => !p || !p.getProveedorId());
+    if (hayProductoNoAsociado) {
+        return res.render("compras/crear", {
+            productos,
+            proveedores: proveedoresDisponibles,
+            cart,
+            error: "Hay productos del carrito sin marca/proveedor asignado"
+        });
+    }
+
+    const hayProductoDeOtraMarca = productosDelCarrito.some(p => p!.getProveedorId() !== proveedorId);
+    if (hayProductoDeOtraMarca) {
+        return res.render("compras/crear", {
+            productos,
+            proveedores: proveedoresDisponibles,
+            cart,
+            error: "Todos los productos del carrito deben pertenecer a la marca/proveedor seleccionado"
+        });
+    }
+
     console.log("CREAR ORDEN - Items a guardar:", items);
     await repoOrden.crear(items, proveedorId, usuarioCreadorId);
     req.session.cart = [];
