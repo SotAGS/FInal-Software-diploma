@@ -9,19 +9,26 @@
 <table>
   <tr>
     <th>ID</th>
+    <th>Título</th>
     <th>Fecha</th>
     <th>Estado</th>
     <th>Acciones</th>
   </tr>
   <% if (!ordenes || !ordenes.length) { %>
-    <tr><td colspan="4">No hay órdenes de compra</td></tr>
+    <tr><td colspan="5">No hay órdenes de compra</td></tr>
   <% } else { %>
   <% ordenes.forEach(function(o) { %>
+    <% const proveedorNombre = (typeof proveedoresMap !== 'undefined' && proveedoresMap[o.proveedorId])
+          ? proveedoresMap[o.proveedorId].getNombre()
+          : 'Proveedor no asignado'; %>
     <tr>
       <td><%= o['id'] %></td>
+      <td>Pedido a <%= proveedorNombre %></td>
       <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
       <td><%= o.estado.constructor.name %></td>
       <td>
+        <button class="btn-menu" data-target="det-act-<%= o['id'] %>">Ver pedido</button>
+
         <% if (o.estado.constructor.name === 'EstadoPendiente') { %>
           <% if (o.items && o.items.length) { %>
             <form method="POST" action="/Compras/recibir/<%= o['id'] %>" style="display:inline">
@@ -50,6 +57,19 @@
         <% } %>
       </td>
     </tr>
+    <tr id="det-act-<%= o['id'] %>" class="detalle" style="display:none">
+      <td colspan="5">
+        <strong>Detalle del pedido:</strong>
+        <ul>
+          <% (o.items||[]).forEach(function(it){
+            const prod = (typeof productosMap !== 'undefined') ? productosMap[it.productoId] : null;
+          %>
+            <li><%= prod ? prod.getNombre() : ('Producto #' + it.productoId) %> — Cantidad solicitada: <%= it.cantidad %></li>
+          <% }) %>
+        </ul>
+        <strong>Proveedor:</strong> <%= proveedorNombre %>
+      </td>
+    </tr>
   <% }) %>
   <% } %>
 </table>
@@ -59,13 +79,17 @@
 <div class="section-box">
 <h3 class="section-title">Completas</h3>
 <table>
-  <tr><th>ID</th><th>Fecha</th><th>Estado</th><th>Menú</th></tr>
+  <tr><th>ID</th><th>Título</th><th>Fecha</th><th>Estado</th><th>Menú</th></tr>
   <% if (!completas || !completas.length) { %>
-    <tr><td colspan="4">No hay órdenes completas</td></tr>
+    <tr><td colspan="5">No hay órdenes completas</td></tr>
   <% } else { %>
     <% completas.forEach(function(o) { %>
+      <% const proveedorNombre = (typeof proveedoresMap !== 'undefined' && proveedoresMap[o.proveedorId])
+            ? proveedoresMap[o.proveedorId].getNombre()
+            : 'Proveedor no asignado'; %>
       <tr>
         <td><%= o['id'] %></td>
+        <td>Pedido a <%= proveedorNombre %></td>
         <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
         <td><%= o.estado.constructor.name %></td>
         <td>
@@ -73,7 +97,7 @@
         </td>
       </tr>
       <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
-        <td colspan="4">
+        <td colspan="5">
           <strong>Items Solicitados vs Recibidos:</strong>
           <ul>
             <% (o.items||[]).forEach(function(it){ 
@@ -98,19 +122,23 @@
 <div class="section-box">
 <h3 class="section-title">Con faltante</h3>
 <table>
-  <tr><th>ID</th><th>Fecha</th><th>Estado</th><th>Menú</th></tr>
+  <tr><th>ID</th><th>Título</th><th>Fecha</th><th>Estado</th><th>Menú</th></tr>
   <% if (!cerradasConFaltante || !cerradasConFaltante.length) { %>
-    <tr><td colspan="4">No hay órdenes cerradas con faltante</td></tr>
+    <tr><td colspan="5">No hay órdenes cerradas con faltante</td></tr>
   <% } else { %>
     <% cerradasConFaltante.forEach(function(o) { %>
+      <% const proveedorNombre = (typeof proveedoresMap !== 'undefined' && proveedoresMap[o.proveedorId])
+            ? proveedoresMap[o.proveedorId].getNombre()
+            : 'Proveedor no asignado'; %>
       <tr>
         <td><%= o['id'] %></td>
+        <td>Pedido a <%= proveedorNombre %></td>
         <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
         <td><%= o.estado.constructor.name %></td>
         <td><button class="btn-menu" data-target="det-<%= o['id'] %>">Menú</button></td>
       </tr>
       <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
-        <td colspan="4">
+        <td colspan="5">
           <strong>Items Solicitados vs Recibidos:</strong>
           <ul>
             <% (o.items||[]).forEach(function(it){ 
@@ -146,19 +174,23 @@
 <div class="section-box">
 <h3 class="section-title">Canceladas</h3>
 <table>
-  <tr><th>ID</th><th>Fecha</th><th>Estado</th><th>Menú</th></tr>
+  <tr><th>ID</th><th>Título</th><th>Fecha</th><th>Estado</th><th>Menú</th></tr>
   <% if (!canceladas || !canceladas.length) { %>
-    <tr><td colspan="4">No hay órdenes canceladas</td></tr>
+    <tr><td colspan="5">No hay órdenes canceladas</td></tr>
   <% } else { %>
     <% canceladas.forEach(function(o) { %>
+      <% const proveedorNombre = (typeof proveedoresMap !== 'undefined' && proveedoresMap[o.proveedorId])
+            ? proveedoresMap[o.proveedorId].getNombre()
+            : 'Proveedor no asignado'; %>
       <tr>
         <td><%= o['id'] %></td>
+        <td>Pedido a <%= proveedorNombre %></td>
         <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
         <td><%= o.estado.constructor.name %></td>
         <td><button class="btn-menu" data-target="det-<%= o['id'] %>">Menú</button></td>
       </tr>
       <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
-        <td colspan="4">
+        <td colspan="5">
           <strong>Items Solicitados:</strong>
           <ul>
             <% (o.items||[]).forEach(function(it){ 

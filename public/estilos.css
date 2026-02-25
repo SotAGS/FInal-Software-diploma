@@ -321,6 +321,19 @@ button {
 
 .btn-menu:hover { background: #0D47A1; }
 
+.btn-menu,
+.btn-primary,
+.btn-warning,
+.btn-success {
+  padding: 10px 18px;
+  min-height: 40px;
+  font-size: 15px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .detalle td {
   background: #FAFAFA;
   border-top: 1px dashed #E0E0E0;

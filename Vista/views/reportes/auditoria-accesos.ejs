@@ -1,6 +1,11 @@
 <div class="reportes-container">
-  <h1>Auditoría de Accesos</h1>
+  <h1><%= (typeof nombreLocal !== 'undefined' && nombreLocal) ? nombreLocal : 'Almacen LeVain' %></h1>
+  <h2>Auditoría de Accesos</h2>
   <p class="subtitle">Registro de logins, logouts e intentos fallidos (últimos 7 días)</p>
+
+  <div class="acciones-reporte no-print">
+    <a href="/Reportes/pdf/auditoria-accesos" class="btn btn-primary">Descargar PDF</a>
+  </div>
 
   <% if (error) { %>
     <div class="alert alert-error"><%= error %></div>
@@ -79,6 +84,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  window.__REPORT_READY__ = false;
   const datos = <%- JSON.stringify(datos || []) %>;
   
   if (datos.length > 0) {
@@ -191,6 +197,12 @@
         }
       }
     });
+
+    setTimeout(() => {
+      window.__REPORT_READY__ = true;
+    }, 300);
+  } else {
+    window.__REPORT_READY__ = true;
   }
 </script>
 
@@ -199,10 +211,38 @@
     padding: 20px;
   }
 
+  h2 {
+    margin-top: 8px;
+    color: #1B5E20;
+  }
+
   .subtitle {
     color: #666;
     font-size: 14px;
     margin-bottom: 20px;
+  }
+
+  .acciones-reporte {
+    margin-bottom: 16px;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 4px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .btn-primary {
+    background-color: #2196f3;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: #1976d2;
   }
 
   .alert {
@@ -277,6 +317,12 @@
     background-color: #f9f9f9;
     border-radius: 8px;
     border: 1px solid #ddd;
+  }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
   }
 
   .report-table {

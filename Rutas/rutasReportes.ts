@@ -5,6 +5,7 @@ import {
   mostrarRotacionInventario,
   mostrarAuditoriaAccesos,
   mostrarBusquedaOrdenesPorFecha,
+  descargarReportePdf,
   obtenerDesempenioCompras,
   obtenerRotacionInventario,
   obtenerAuditoriaAccesos,
@@ -21,6 +22,7 @@ router.get("/desempenio-compras", mostrarDesempenioCompras);
 router.get("/rotacion-inventario", mostrarRotacionInventario);
 router.get("/auditoria-accesos", mostrarAuditoriaAccesos);
 router.get("/busqueda-ordenes-fecha", mostrarBusquedaOrdenesPorFecha);
+router.get("/pdf/:reporte", descargarReportePdf);
 
 // API endpoints (JSON)
 router.get("/api/desempenio-compras", obtenerDesempenioCompras);

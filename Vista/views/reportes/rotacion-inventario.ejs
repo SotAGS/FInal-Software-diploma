@@ -1,6 +1,11 @@
 <div class="reportes-container">
-  <h1>Rotación de Inventario</h1>
+  <h1><%= (typeof nombreLocal !== 'undefined' && nombreLocal) ? nombreLocal : 'Almacen LeVain' %></h1>
+  <h2>Rotación de Inventario</h2>
   <p class="subtitle">Estado actual del inventario con alertas de stock</p>
+
+  <div class="acciones-reporte no-print">
+    <a href="/Reportes/pdf/rotacion-inventario" class="btn btn-primary">Descargar PDF</a>
+  </div>
 
   <% if (error) { %>
     <div class="alert alert-error"><%= error %></div>
@@ -9,7 +14,6 @@
   <% if (datos && datos.length > 0) { %>
     <div class="report-section">
       <div class="alert alert-info">
-        <strong>Leyenda:</strong>
         <span class="badge badge-danger">CRÍTICO</span> &lt; 10 unidades |
         <span class="badge badge-warning">BAJO</span> 10-50 unidades |
         <span class="badge badge-info">NORMAL</span> 50-100 unidades |
@@ -80,6 +84,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  window.__REPORT_READY__ = false;
   const datos = <%- JSON.stringify(datos || []) %>;
   
   if (datos.length > 0) {
@@ -126,6 +131,12 @@
         }
       }
     });
+
+    setTimeout(() => {
+      window.__REPORT_READY__ = true;
+    }, 300);
+  } else {
+    window.__REPORT_READY__ = true;
   }
 </script>
 
@@ -134,10 +145,38 @@
     padding: 20px;
   }
 
+  h2 {
+    margin-top: 8px;
+    color: #1B5E20;
+  }
+
   .subtitle {
     color: #666;
     font-size: 14px;
     margin-bottom: 20px;
+  }
+
+  .acciones-reporte {
+    margin-bottom: 16px;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 4px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .btn-primary {
+    background-color: #2196f3;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: #1976d2;
   }
 
   .alert {
@@ -282,5 +321,11 @@
   h3 {
     margin-top: 0;
     color: #333;
+  }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
   }
 </style>

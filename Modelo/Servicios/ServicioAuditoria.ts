@@ -2,6 +2,13 @@ import { getPool } from "../../config/database";
 
 export class ServicioAuditoria {
   private static instancia: ServicioAuditoria;
+  private loginLogoutConfig:
+    | {
+        campoTipo: "tipo" | "tipo_evento";
+        campoFecha: "fecha_hora" | "fecha";
+        tieneEmail: boolean;
+      }
+    | null = null;
 
   private constructor() {}
 
@@ -10,6 +17,58 @@ export class ServicioAuditoria {
       ServicioAuditoria.instancia = new ServicioAuditoria();
     }
     return ServicioAuditoria.instancia;
+  }
+
+  private async obtenerConfigLoginLogout(): Promise<{
+    campoTipo: "tipo" | "tipo_evento";
+    campoFecha: "fecha_hora" | "fecha";
+    tieneEmail: boolean;
+  }> {
+    if (this.loginLogoutConfig) {
+      return this.loginLogoutConfig;
+    }
+
+    const pool = getPool();
+    const [tableRows] = await pool.query<any[]>(
+      `SELECT COUNT(*) AS total
+       FROM information_schema.TABLES
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'login_logout'`
+    );
+
+    const existeTabla = Number((tableRows as any[])[0]?.total || 0) > 0;
+    if (!existeTabla) {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS login_logout (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          usuario_id INT NULL,
+          email VARCHAR(100) NULL,
+          tipo VARCHAR(20) NOT NULL,
+          detalle VARCHAR(255) NULL,
+          fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_login_logout_fecha_hora (fecha_hora),
+          INDEX idx_login_logout_tipo (tipo),
+          FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+        )
+      `);
+    }
+
+    const [columnRows] = await pool.query<any[]>(
+      `SELECT COLUMN_NAME
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'login_logout'`
+    );
+
+    const columnas = new Set((columnRows as any[]).map((row: any) => String(row.COLUMN_NAME)));
+
+    this.loginLogoutConfig = {
+      campoTipo: columnas.has("tipo") ? "tipo" : "tipo_evento",
+      campoFecha: columnas.has("fecha_hora") ? "fecha_hora" : "fecha",
+      tieneEmail: columnas.has("email")
+    };
+
+    return this.loginLogoutConfig;
   }
 
   /**
@@ -47,10 +106,23 @@ export class ServicioAuditoria {
   async registrarLogin(idUsuario: number): Promise<void> {
     try {
       const pool = getPool();
-      await pool.query(
-        `INSERT INTO login_logout (usuario_id, tipo_evento) VALUES (?, 'LOGIN')`,
+      const config = await this.obtenerConfigLoginLogout();
+      const [[usuario]] = await pool.query(
+        `SELECT email FROM usuarios WHERE id = ?`,
         [idUsuario]
-      );
+      ) as any;
+
+      if (config.tieneEmail) {
+        await pool.query(
+          `INSERT INTO login_logout (usuario_id, email, ${config.campoTipo}) VALUES (?, ?, 'LOGIN')`,
+          [idUsuario, usuario?.email || null]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO login_logout (usuario_id, ${config.campoTipo}) VALUES (?, 'LOGIN')`,
+          [idUsuario]
+        );
+      }
       console.log(`✅ [LOGIN] Usuario ${idUsuario}`);
     } catch (error) {
       console.error("❌ Error registrando login:", (error as any).message);
@@ -63,10 +135,23 @@ export class ServicioAuditoria {
   async registrarLogout(idUsuario: number): Promise<void> {
     try {
       const pool = getPool();
-      await pool.query(
-        `INSERT INTO login_logout (usuario_id, tipo_evento) VALUES (?, 'LOGOUT')`,
+      const config = await this.obtenerConfigLoginLogout();
+      const [[usuario]] = await pool.query(
+        `SELECT email FROM usuarios WHERE id = ?`,
         [idUsuario]
-      );
+      ) as any;
+
+      if (config.tieneEmail) {
+        await pool.query(
+          `INSERT INTO login_logout (usuario_id, email, ${config.campoTipo}) VALUES (?, ?, 'LOGOUT')`,
+          [idUsuario, usuario?.email || null]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO login_logout (usuario_id, ${config.campoTipo}) VALUES (?, 'LOGOUT')`,
+          [idUsuario]
+        );
+      }
       console.log(`✅ [LOGOUT] Usuario ${idUsuario}`);
     } catch (error) {
       console.error("❌ Error registrando logout:", (error as any).message);
@@ -79,6 +164,7 @@ export class ServicioAuditoria {
   async registrarLoginFallido(email: string, motivo: string = "Credenciales inválidas"): Promise<void> {
     try {
       const pool = getPool();
+      const config = await this.obtenerConfigLoginLogout();
       
       // Obtener ID del usuario si existe
       const [[usuario]] = await pool.query(
@@ -88,10 +174,17 @@ export class ServicioAuditoria {
 
       const usuarioId = usuario ? usuario.id : null;
 
-      await pool.query(
-        `INSERT INTO login_logout (usuario_id, tipo_evento, detalle) VALUES (?, 'LOGIN_FAIL', ?)`,
-        [usuarioId, motivo]
-      );
+      if (config.tieneEmail) {
+        await pool.query(
+          `INSERT INTO login_logout (usuario_id, email, ${config.campoTipo}, detalle) VALUES (?, ?, 'LOGIN_FAIL', ?)`,
+          [usuarioId, email, motivo]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO login_logout (usuario_id, ${config.campoTipo}, detalle) VALUES (?, 'LOGIN_FAIL', ?)`,
+          [usuarioId, motivo]
+        );
+      }
       console.log(`⚠️  [LOGIN_FAIL] Email: ${email}`);
     } catch (error) {
       console.error("❌ Error registrando login fallido:", (error as any).message);
@@ -130,12 +223,13 @@ export class ServicioAuditoria {
   async obtenerAccesos(dias: number = 30): Promise<any[]> {
     try {
       const pool = getPool();
+      const config = await this.obtenerConfigLoginLogout();
       const [rows] = await pool.query(
-        `SELECT ll.*, u.email, u.nombre 
+        `SELECT ll.*, ll.${config.campoTipo} AS tipo_evento_normalizado, u.email, u.nombre 
          FROM login_logout ll
          LEFT JOIN usuarios u ON ll.usuario_id = u.id
-         WHERE ll.fecha_hora >= DATE_SUB(NOW(), INTERVAL ? DAY)
-         ORDER BY ll.fecha_hora DESC`,
+         WHERE ll.${config.campoFecha} >= DATE_SUB(NOW(), INTERVAL ? DAY)
+         ORDER BY ll.${config.campoFecha} DESC`,
         [dias]
       );
       return rows as any[];

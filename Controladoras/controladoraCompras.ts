@@ -7,29 +7,6 @@ const repoOrden = RepositorioOrdenCompra.obtenerInstancia();
 const repoProveedor = RepositorioProveedor.obtenerInstancia();
 const repoProducto = RepositorioProducto.obtenerInstancia();
 
-const calcularProveedoresDisponibles = async (cart: any[]): Promise<any[]> => {
-    const proveedores = await repoProveedor.obtenerTodos();
-    if (!cart || cart.length === 0) {
-        return proveedores;
-    }
-
-    const productoIds = Array.from(new Set(cart.map((item: any) => Number(item.productoId)).filter((id: number) => Number.isFinite(id) && id > 0)));
-    if (!productoIds.length) {
-        return [];
-    }
-
-    const proveedoresIds = new Set<number>();
-    for (const productoId of productoIds) {
-        const producto = await repoProducto.buscarPorId(productoId, true);
-        const proveedorId = producto?.getProveedorId();
-        if (proveedorId) {
-            proveedoresIds.add(proveedorId);
-        }
-    }
-
-    return proveedores.filter(pr => proveedoresIds.has(pr.getId()));
-};
-
 export const listarOrdenes = async (req: any, res: Response): Promise<void> => {
     const ordenes = await repoOrden.obtenerTodos();
     const activas = ordenes.filter(o => {
@@ -64,11 +41,14 @@ export const listarOrdenes = async (req: any, res: Response): Promise<void> => {
 };
 
 export const mostrarCrearOrden = async (req: any, res: Response): Promise<void> => {
-    // Mostrar productos para añadir al carrito y proveedores
+    // Mostrar productos para añadir al carrito y datos de proveedor por producto
     const productos = await repoProducto.obtenerTodos();
+    const proveedores = await repoProveedor.obtenerTodos(true);
     const cart = req.session?.cart || [];
-    const proveedores = await calcularProveedoresDisponibles(cart);
-    res.render("compras/crear", { productos, proveedores, cart, error: null });
+    const proveedoresMap: Record<number, any> = {};
+    proveedores.forEach(pr => { proveedoresMap[(pr as any).getId()] = pr; });
+
+    res.render("compras/crear", { productos, proveedoresMap, cart, error: null });
 };
 
 export const agregarAlCarrito = (req: any, res: Response): void => {
@@ -104,49 +84,69 @@ export const quitarDelCarrito = (req: any, res: Response): void => {
 };
 
 export const crearOrden = async (req: any, res: Response): Promise<void> => {
-    const proveedorId = Number(req.body.proveedorId) || undefined;
     const usuarioSesionId = Number(req.session?.usuarioId);
     const usuarioCreadorId = Number.isFinite(usuarioSesionId) && usuarioSesionId > 0 ? usuarioSesionId : undefined;
     const cart = req.session?.cart || [];
     const productos = await repoProducto.obtenerTodos();
-    const proveedoresDisponibles = await calcularProveedoresDisponibles(cart);
-    console.log("CREAR ORDEN - Cart:", cart, "Proveedor:", proveedorId);
+    const proveedores = await repoProveedor.obtenerTodos(true);
+    const proveedoresMap: Record<number, any> = {};
+    proveedores.forEach(pr => { proveedoresMap[(pr as any).getId()] = pr; });
+
+    console.log("CREAR ORDEN - Cart:", cart);
     if (!cart.length) {
         console.log("CREAR ORDEN - Carrito vacío");
-        return res.render("compras/crear", { productos, proveedores: proveedoresDisponibles, cart, error: "El carrito está vacío" });
+        return res.render("compras/crear", { productos, proveedoresMap, cart, error: "El carrito está vacío" });
     }
 
-    if (!proveedorId) {
-        return res.render("compras/crear", { productos, proveedores: proveedoresDisponibles, cart, error: "Debe seleccionar una marca/proveedor" });
-    }
+    const items = cart
+        .map((i: any) => ({ productoId: Number(i.productoId), cantidad: Number(i.cantidad) }))
+        .filter((i: { productoId: number; cantidad: number }) => Number.isFinite(i.productoId) && i.productoId > 0 && Number.isFinite(i.cantidad) && i.cantidad > 0);
 
-    const items = cart.map((i: any) => ({ productoId: Number(i.productoId), cantidad: Number(i.cantidad) }));
+    if (!items.length) {
+        return res.render("compras/crear", {
+            productos,
+            proveedoresMap,
+            cart,
+            error: "El carrito no tiene items válidos"
+        });
+    }
 
     const productosDelCarrito = await Promise.all(items.map((i: { productoId: number }) => repoProducto.buscarPorId(i.productoId, true)));
     const hayProductoNoAsociado = productosDelCarrito.some(p => !p || !p.getProveedorId());
     if (hayProductoNoAsociado) {
         return res.render("compras/crear", {
             productos,
-            proveedores: proveedoresDisponibles,
+            proveedoresMap,
             cart,
             error: "Hay productos del carrito sin marca/proveedor asignado"
         });
     }
 
-    const hayProductoDeOtraMarca = productosDelCarrito.some(p => p!.getProveedorId() !== proveedorId);
-    if (hayProductoDeOtraMarca) {
-        return res.render("compras/crear", {
-            productos,
-            proveedores: proveedoresDisponibles,
-            cart,
-            error: "Todos los productos del carrito deben pertenecer a la marca/proveedor seleccionado"
-        });
+    const itemsPorProveedor = new Map<number, { productoId: number; cantidad: number }[]>();
+    for (let index = 0; index < items.length; index++) {
+        const producto = productosDelCarrito[index]!;
+        const proveedorId = producto.getProveedorId()!;
+        const agrupados = itemsPorProveedor.get(proveedorId) || [];
+        agrupados.push(items[index]);
+        itemsPorProveedor.set(proveedorId, agrupados);
     }
 
-    console.log("CREAR ORDEN - Items a guardar:", items);
-    await repoOrden.crear(items, proveedorId, usuarioCreadorId);
+    const ordenesCreadas: number[] = [];
+    const titulosOrdenesCreadas: string[] = [];
+    for (const [proveedorId, itemsProveedor] of itemsPorProveedor.entries()) {
+        const orden = await repoOrden.crear(itemsProveedor, proveedorId, usuarioCreadorId);
+        ordenesCreadas.push(orden.id);
+        const proveedor = proveedoresMap[proveedorId];
+        const nombreProveedor = proveedor ? proveedor.getNombre() : `Proveedor #${proveedorId}`;
+        titulosOrdenesCreadas.push(`Pedido a ${nombreProveedor} (ID: ${orden.id})`);
+    }
+
     req.session.cart = [];
-    console.log("CREAR ORDEN - Orden creada, redirigiendo");
+    const cantidadOrdenes = ordenesCreadas.length;
+    req.session.message = cantidadOrdenes === 1
+        ? `Se creó 1 orden de compra: ${titulosOrdenesCreadas[0]}.`
+        : `Se crearon ${cantidadOrdenes} órdenes de compra: ${titulosOrdenesCreadas.join(" | ")}.`;
+    console.log("CREAR ORDEN - Órdenes creadas:", ordenesCreadas, "redirigiendo");
     req.session.save((err: any) => {
         if (err) {
             console.error("ERROR guardando sesión:", err);
@@ -219,6 +219,14 @@ export const cerrarConFaltante = async (req: any, res: Response): Promise<void> 
     const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     const userId = req.session?.usuarioId || 0;
+
+    const totalFaltante = (orden.itemsFaltantes || []).reduce((acc, item) => acc + Number(item.cantidadFaltante || 0), 0);
+    if (totalFaltante <= 0) {
+        req.session.message = "No se puede cerrar con faltante si el faltante es 0. Use 'Cerrar completo'.";
+        res.redirect(`/Compras/faltante/${id}`);
+        return;
+    }
+
     orden.cerrarConFaltante(userId);
     await repoOrden.guardarCambios(orden);
     res.redirect("/Compras");
@@ -254,7 +262,7 @@ export const mostrarEspecificarFaltante = async (req: any, res: Response): Promi
     const productos = await repoProducto.obtenerTodos();
     const productosMap: Record<number, any> = {};
     productos.forEach(p => { productosMap[(p as any).getId()] = p; });
-    res.render("compras/especificarFaltante", { orden, productosMap });
+    res.render("compras/especificarFaltante", { orden, productosMap, session: req.session });
 };
 
 export const guardarFaltantes = async (req: any, res: Response): Promise<void> => {
@@ -277,6 +285,13 @@ export const guardarFaltantes = async (req: any, res: Response): Promise<void> =
     }
     
     try {
+        const totalFaltante = faltantes.reduce((acc, item) => acc + item.cantidadFaltante, 0);
+        if (totalFaltante <= 0) {
+            req.session.message = `No se puede cerrar con faltante en la orden ${id} si el faltante es 0.`;
+            res.redirect(`/Compras/faltante/${id}`);
+            return;
+        }
+
         // Incrementar stock SOLO con lo que efectivamente llegó (solicitado - faltante)
         for (const item of orden.items) {
             const faltante = faltantes.find(f => f.productoId === item.productoId);

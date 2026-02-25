@@ -1,4 +1,5 @@
-<h1>Módulo de Reportes</h1>
+<h1><%= (typeof nombreLocal !== 'undefined' && nombreLocal) ? nombreLocal : 'Almacen LeVain' %></h1>
+<h2>Módulo de Reportes</h2>
 
 <p>Selecciona un reporte para ver análisis e información detallada del negocio</p>
 
@@ -33,6 +34,11 @@
 </div>
 
 <style>
+  h2 {
+    margin-top: 8px;
+    color: #1B5E20;
+  }
+
   .reportes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

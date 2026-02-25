@@ -1,9 +1,14 @@
 <h1>Especificar Faltantes - Orden <%= orden.id %></h1>
 
+<% if (typeof session !== 'undefined' && session.message) { %>
+  <div class="alert"><%= session.message %></div>
+  <% session.message = null; %>
+<% } %>
+
 <div class="card-principal">
   <p>Por favor especifica qué cantidad faltó de cada producto:</p>
 
-  <form method="POST" action="/Compras/faltante/<%= orden.id %>">
+  <form method="POST" action="/Compras/faltante/<%= orden.id %>" id="form-faltantes">
     <table class="form-table">
       <thead>
         <tr>
@@ -36,7 +41,7 @@
 
     <div style="margin-top: 20px;">
       <button type="submit" class="btn-success">Cerrar con Faltante</button>
-      <a href="/Compras" class="btn-secondary">Cancelar</a>
+      <a href="/Compras" class="btn-secondary">Volver al menú de cierre</a>
     </div>
   </form>
 </div>
@@ -56,3 +61,15 @@
     margin-left: 10px;
   }
 </style>
+
+<script>
+  document.getElementById('form-faltantes')?.addEventListener('submit', function (event) {
+    const inputs = Array.from(document.querySelectorAll('input[name^="faltante_"]'));
+    const total = inputs.reduce((acc, input) => acc + (Number(input.value) || 0), 0);
+
+    if (total <= 0) {
+      event.preventDefault();
+      alert('No se puede cerrar con faltante cuando el faltante total es 0.');
+    }
+  });
+</script>
