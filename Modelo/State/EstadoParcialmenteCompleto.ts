@@ -3,7 +3,6 @@ import { OrdenCompra } from "../Entidades/OrdenCompra";
 import { ServicioAuditoria } from "../Servicios/ServicioAuditoria";
 import { EstadoCompleto } from "./EstadoCompleto";
 import { EstadoCerradoConFaltante } from "./EstadoCerradoConFaltante";
-import { EstadoCancelado } from "./EstadoCancelado";
 
 export class EstadoParcialmenteCompleto implements OrdenCompraState {
 
@@ -12,31 +11,14 @@ export class EstadoParcialmenteCompleto implements OrdenCompraState {
     cantidad: number,
     idUsuario: number
   ): void {
-    orden.cambiarEstado(new EstadoCompleto());
-
-    ServicioAuditoria.obtenerInstancia().registrarCambio(
-      "OrdenCompra",
-      orden.id,
-      "RECIBIR_PRODUCTO",
-      idUsuario,
-      "ParcialmenteCompleto",
-      "Completo"
-    );
+    throw new Error("La orden ya fue recibida. Debe cerrarse completa o con faltante.");
   }
 
   cancelar(
     orden: OrdenCompra,
     idUsuario: number
   ): void {
-    orden.cambiarEstado(new EstadoCancelado());
-    ServicioAuditoria.obtenerInstancia().registrarCambio(
-      "OrdenCompra",
-      orden.id,
-      "CANCELAR",
-      idUsuario,
-      "ParcialmenteCompleto",
-      "Cancelado"
-    );
+    throw new Error("No se puede cancelar una orden que ya fue recibida.");
   }
 
   cerrarConFaltante(

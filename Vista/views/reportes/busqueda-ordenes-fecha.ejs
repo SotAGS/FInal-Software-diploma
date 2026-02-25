@@ -1,0 +1,152 @@
+<div class="reportes-container">
+  <h1>Búsqueda de Órdenes por Fecha</h1>
+  <p class="subtitle">Consulta órdenes de compra filtrando por rango de fechas</p>
+
+  <% if (error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <form method="GET" action="/Reportes/busqueda-ordenes-fecha" class="filtro-form">
+    <div>
+      <label for="desde">Desde</label><br/>
+      <input type="date" id="desde" name="desde" value="<%= (filtros && filtros.desde) ? filtros.desde : '' %>" />
+    </div>
+
+    <div>
+      <label for="hasta">Hasta</label><br/>
+      <input type="date" id="hasta" name="hasta" value="<%= (filtros && filtros.hasta) ? filtros.hasta : '' %>" />
+    </div>
+
+    <div class="acciones-filtro">
+      <button type="submit" class="btn btn-primary">Buscar</button>
+      <a href="/Reportes/busqueda-ordenes-fecha" class="btn btn-secondary">Limpiar</a>
+    </div>
+  </form>
+
+  <table class="report-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+        <th>Proveedor</th>
+        <th>Items</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (!ordenes || !ordenes.length) { %>
+        <tr>
+          <td colspan="5" class="no-data">No hay órdenes para el rango seleccionado</td>
+        </tr>
+      <% } else { %>
+        <% ordenes.forEach(function(o) { %>
+          <tr>
+            <td><%= o.id %></td>
+            <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
+            <td><%= o.estado.constructor.name %></td>
+            <td>
+              <%= (typeof proveedoresMap !== 'undefined' && proveedoresMap[o.proveedorId])
+                    ? proveedoresMap[o.proveedorId].getNombre()
+                    : 'N/A' %>
+            </td>
+            <td><%= (o.items || []).length %></td>
+          </tr>
+        <% }); %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .reportes-container {
+    padding: 20px;
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .filtro-form {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .acciones-filtro {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 4px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .btn-primary {
+    background-color: #2196f3;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: #1976d2;
+  }
+
+  .btn-secondary {
+    background-color: #666;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background-color: #555;
+  }
+
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .report-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .report-table tr:hover {
+    background-color: #f9f9f9;
+  }
+
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
+
+  .alert-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #c62828;
+  }
+
+  .no-data {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+  }
+</style>

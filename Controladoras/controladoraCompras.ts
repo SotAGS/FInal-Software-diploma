@@ -8,7 +8,7 @@ const repoProveedor = RepositorioProveedor.obtenerInstancia();
 const repoProducto = RepositorioProducto.obtenerInstancia();
 
 export const listarOrdenes = async (req: any, res: Response): Promise<void> => {
-    const ordenes = repoOrden.obtenerTodos();
+    const ordenes = await repoOrden.obtenerTodos();
     const activas = ordenes.filter(o => {
         const name = o.estado.constructor.name;
         return name !== 'EstadoCancelado' && name !== 'EstadoCerrado' && name !== 'EstadoCerradoConFaltante' && name !== 'EstadoCompleto';
@@ -23,6 +23,11 @@ export const listarOrdenes = async (req: any, res: Response): Promise<void> => {
     const productosMap: Record<number, any> = {};
     productos.forEach(p => { productosMap[(p as any).getId()] = p; });
 
+    // Cargar proveedores para que la vista no haga llamadas async
+    const proveedores = await repoProveedor.obtenerTodos(true);
+    const proveedoresMap: Record<number, any> = {};
+    proveedores.forEach(pr => { proveedoresMap[(pr as any).getId()] = pr; });
+
     res.render("compras/index", { 
         ordenes: activas, 
         completas, 
@@ -30,15 +35,15 @@ export const listarOrdenes = async (req: any, res: Response): Promise<void> => {
         canceladas, 
         cerradas, 
         session: req.session,
-        repoProveedor,
-        productosMap
+        productosMap,
+        proveedoresMap
     });
 };
 
 export const mostrarCrearOrden = async (req: any, res: Response): Promise<void> => {
     // Mostrar productos para añadir al carrito y proveedores
     const productos = await repoProducto.obtenerTodos();
-    const proveedores = repoProveedor.obtenerTodos();
+    const proveedores = await repoProveedor.obtenerTodos();
     const cart = req.session?.cart || [];
     res.render("compras/crear", { productos, proveedores, cart });
 };
@@ -77,16 +82,18 @@ export const quitarDelCarrito = (req: any, res: Response): void => {
 
 export const crearOrden = async (req: any, res: Response): Promise<void> => {
     const proveedorId = Number(req.body.proveedorId) || undefined;
+    const usuarioSesionId = Number(req.session?.usuarioId);
+    const usuarioCreadorId = Number.isFinite(usuarioSesionId) && usuarioSesionId > 0 ? usuarioSesionId : undefined;
     const cart = req.session?.cart || [];
     console.log("CREAR ORDEN - Cart:", cart, "Proveedor:", proveedorId);
     if (!cart.length) {
         console.log("CREAR ORDEN - Carrito vacío");
         const productos = await repoProducto.obtenerTodos();
-        return res.render("compras/crear", { productos, proveedores: repoProveedor.obtenerTodos(), cart, error: "El carrito está vacío" });
+        return res.render("compras/crear", { productos, proveedores: await repoProveedor.obtenerTodos(), cart, error: "El carrito está vacío" });
     }
     const items = cart.map((i: any) => ({ productoId: Number(i.productoId), cantidad: Number(i.cantidad) }));
     console.log("CREAR ORDEN - Items a guardar:", items);
-    repoOrden.crear(items, proveedorId);
+    await repoOrden.crear(items, proveedorId, usuarioCreadorId);
     req.session.cart = [];
     console.log("CREAR ORDEN - Orden creada, redirigiendo");
     req.session.save((err: any) => {
@@ -97,16 +104,16 @@ export const crearOrden = async (req: any, res: Response): Promise<void> => {
     });
 };
 
-export const recibirProducto = (req: any, res: Response): void => {
+export const recibirProducto = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const orden = repoOrden.buscarPorId(id);
+    const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     const userId = req.session?.usuarioId || 0;
 
     const estado = orden.estado.constructor.name;
-    // Sólo permitir recibir si está Pendiente o ParcialmenteCompleto
-    if (estado !== 'EstadoPendiente' && estado !== 'EstadoParcialmenteCompleto') {
-        req.session.message = 'Esta orden ya fue recibida.';
+    // Sólo permitir recibir si está Pendiente
+    if (estado !== 'EstadoPendiente') {
+        req.session.message = 'La orden ya fue recibida. Debe cerrarse completa o con faltante.';
         return res.redirect('/Compras');
     }
 
@@ -124,6 +131,7 @@ export const recibirProducto = (req: any, res: Response): void => {
         });
 
         orden.recibirProductos(userId);
+        await repoOrden.guardarCambios(orden);
     } catch (e) {
         console.error(e);
         req.session.message = 'Ocurrió un error al recibir la orden.';
@@ -132,13 +140,21 @@ export const recibirProducto = (req: any, res: Response): void => {
     res.redirect('/Compras');
 };
 
-export const cancelarOrden = (req: any, res: Response): void => {
+export const cancelarOrden = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const orden = repoOrden.buscarPorId(id);
+    const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     const userId = req.session?.usuarioId || 0;
+    const estado = orden.estado.constructor.name;
+
+    if (estado !== 'EstadoPendiente') {
+        req.session.message = 'No se puede cancelar una orden que ya fue recibida.';
+        return res.redirect('/Compras');
+    }
+
     try {
         orden.cancelar(userId);
+        await repoOrden.guardarCambios(orden);
         req.session.message = `Orden ${id} cancelada correctamente.`;
     } catch (e) {
         console.error(e);
@@ -147,18 +163,19 @@ export const cancelarOrden = (req: any, res: Response): void => {
     res.redirect("/Compras");
 };
 
-export const cerrarConFaltante = (req: any, res: Response): void => {
+export const cerrarConFaltante = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const orden = repoOrden.buscarPorId(id);
+    const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     const userId = req.session?.usuarioId || 0;
     orden.cerrarConFaltante(userId);
+    await repoOrden.guardarCambios(orden);
     res.redirect("/Compras");
 };
 
 export const cerrarOrden = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const orden = repoOrden.buscarPorId(id);
+    const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     const userId = req.session?.usuarioId || 0;
     try {
@@ -170,6 +187,7 @@ export const cerrarOrden = async (req: any, res: Response): Promise<void> => {
             }
         }
         orden.cerrar(userId);
+        await repoOrden.guardarCambios(orden);
         req.session.message = `Orden ${id} cerrada correctamente.`;
     } catch (e) {
         console.error(e);
@@ -180,7 +198,7 @@ export const cerrarOrden = async (req: any, res: Response): Promise<void> => {
 
 export const mostrarEspecificarFaltante = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const orden = repoOrden.buscarPorId(id);
+    const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     const productos = await repoProducto.obtenerTodos();
     const productosMap: Record<number, any> = {};
@@ -190,7 +208,7 @@ export const mostrarEspecificarFaltante = async (req: any, res: Response): Promi
 
 export const guardarFaltantes = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const orden = repoOrden.buscarPorId(id);
+    const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     
     const userId = req.session?.usuarioId || 0;
@@ -220,6 +238,7 @@ export const guardarFaltantes = async (req: any, res: Response): Promise<void> =
         
         orden.registrarFaltantes(faltantes);
         orden.cerrarConFaltante(userId);
+        await repoOrden.guardarCambios(orden);
         req.session.message = `Orden ${id} cerrada con faltante.`;
     } catch (e) {
         console.error(e);

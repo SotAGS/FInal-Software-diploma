@@ -10,15 +10,21 @@ export class OrdenCompra {
   public itemsRecibidos: { productoId: number; cantidadRecibida: number }[] = [];
   public itemsFaltantes: { productoId: number; cantidadFaltante: number }[] = [];
   public proveedorId?: number;
+  public readonly usuarioCreadorId?: number;
+  public readonly fechaCreacion: Date;
 
   constructor(
     public readonly id: number,
     public estado: OrdenCompraState,
     items: OrdenItem[] = [],
-    proveedorId?: number
+    proveedorId?: number,
+    usuarioCreadorId?: number,
+    fechaCreacion?: Date
   ) {
     this.items = items;
     this.proveedorId = proveedorId;
+    this.usuarioCreadorId = usuarioCreadorId;
+    this.fechaCreacion = fechaCreacion || new Date();
   }
 
   cambiarEstado(nuevoEstado: OrdenCompraState): void {
@@ -52,5 +58,13 @@ export class OrdenCompra {
 
   registrarFaltantes(faltantes: { productoId: number; cantidadFaltante: number }[]): void {
     this.itemsFaltantes = faltantes;
+  }
+
+  getFechaCreacion(): Date {
+    return this.fechaCreacion;
+  }
+
+  getUsuarioCreadorId(): number | undefined {
+    return this.usuarioCreadorId;
   }
 }

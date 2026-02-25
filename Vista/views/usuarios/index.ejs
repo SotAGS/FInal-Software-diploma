@@ -19,6 +19,7 @@
           <th>Nombre</th>
           <th>Email</th>
           <th>Rol</th>
+          <th>Estado</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -29,10 +30,26 @@
             <td><%= usuario.getEmail() %></td>
             <td><span class="badge badge-info"><%= usuario.getRol().nombre %></span></td>
             <td>
-              <a href="/Usuarios/<%= usuario.getId() %>/editar" class="btn btn-small btn-secondary">Editar</a>
-              <form method="POST" action="/Usuarios/<%= usuario.getId() %>/eliminar" style="display: inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar este usuario?');">
-                <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
-              </form>
+              <% if (usuario.esActivo()) { %>
+                <span class="badge badge-success">Activo</span>
+              <% } else { %>
+                <span class="badge badge-warning">Eliminado</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (usuario.esActivo()) { %>
+                <a href="/Usuarios/<%= usuario.getId() %>/editar" class="btn btn-small btn-secondary">Editar</a>
+                <form method="POST" action="/Usuarios/<%= usuario.getId() %>/eliminar" style="display: inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar este usuario?');">
+                  <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+                </form>
+              <% } else { %>
+                <form method="POST" action="/Usuarios/<%= usuario.getId() %>/recuperar" style="display: inline;">
+                  <button type="submit" class="btn btn-small btn-success">Recuperar</button>
+                </form>
+                <form method="POST" action="/Usuarios/<%= usuario.getId() %>/eliminar-definitivo" style="display: inline;" onsubmit="return confirm('Esta acción elimina el usuario de forma definitiva. ¿Desea continuar?');">
+                  <button type="submit" class="btn btn-small btn-danger-dark">Eliminar definitivo</button>
+                </form>
+              <% } %>
             </td>
           </tr>
         <% }); %>
@@ -121,6 +138,26 @@
     background-color: #da190b;
   }
 
+  .btn-success {
+    background-color: #4caf50;
+    color: white;
+    font-size: 12px;
+  }
+
+  .btn-success:hover {
+    background-color: #388e3c;
+  }
+
+  .btn-danger-dark {
+    background-color: #8b0000;
+    color: white;
+    font-size: 12px;
+  }
+
+  .btn-danger-dark:hover {
+    background-color: #6f0000;
+  }
+
   .btn-small {
     padding: 6px 12px;
     font-size: 12px;
@@ -137,6 +174,14 @@
 
   .badge-info {
     background-color: #2196f3;
+  }
+
+  .badge-success {
+    background-color: #4caf50;
+  }
+
+  .badge-warning {
+    background-color: #ff9800;
   }
 
   .alert {

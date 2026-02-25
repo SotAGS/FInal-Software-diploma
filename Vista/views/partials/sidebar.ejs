@@ -12,6 +12,10 @@
       <a href="/Inventario">Inventario</a>
     <% } %>
 
+    <% if (usuario && ['ADMIN', 'GERENTE', 'EMPLEADO'].includes(usuario.getRol().nombre)) { %>
+      <a href="/Ventas">Ventas</a>
+    <% } %>
+
     <% if (usuario && usuario.puede('VER_REPORTES')) { %>
       <a href="/Reportes">Reportes</a>
     <% } %>

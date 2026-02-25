@@ -8,12 +8,17 @@
   <form method="POST" action="/Usuarios" class="usuario-form">
     <div class="form-group">
       <label for="nombre">Nombre:</label>
-      <input type="text" id="nombre" name="nombre" required placeholder="Ingrese el nombre del usuario">
+      <input type="text" id="nombre" name="nombre" required placeholder="Ingrese el nombre del usuario" value="<%= formData?.nombre || '' %>">
     </div>
 
     <div class="form-group">
       <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required placeholder="Ingrese el email">
+      <input type="email" id="email" name="email" required placeholder="Ingrese el email" value="<%= formData?.email || '' %>">
+    </div>
+
+    <div class="form-group">
+      <label for="backupEmail">Email de backup (opcional):</label>
+      <input type="email" id="backupEmail" name="backupEmail" placeholder="Ingrese un email alternativo" value="<%= formData?.backupEmail || '' %>">
     </div>
 
     <div class="form-group">
@@ -26,7 +31,7 @@
       <select id="rol" name="rol" required>
         <option value="">-- Seleccione un rol --</option>
         <% roles.forEach(rol => { %>
-          <option value="<%= rol %>"><%= rol %></option>
+          <option value="<%= rol %>" <%= formData?.rol === rol ? 'selected' : '' %>><%= rol %></option>
         <% }); %>
       </select>
     </div>

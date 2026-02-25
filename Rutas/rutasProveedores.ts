@@ -5,7 +5,8 @@ import {
     crearProveedor,
     mostrarFormularioEditarProveedor,
     actualizarProveedor,
-    eliminarProveedor
+    eliminarProveedor,
+    recuperarProveedor
 } from "../Controladoras/controladoraProveedores";
 import { requiereAlgunPermiso } from "../Middlewares/autenticacion";
 
@@ -19,5 +20,6 @@ router.post("/", crearProveedor);
 router.get("/:id/editar", mostrarFormularioEditarProveedor);
 router.post("/:id", actualizarProveedor);
 router.post("/:id/eliminar", eliminarProveedor);
+router.post("/:id/recuperar", recuperarProveedor);
 
 export default router;

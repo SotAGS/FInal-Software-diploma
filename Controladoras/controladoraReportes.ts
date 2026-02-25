@@ -1,10 +1,50 @@
 import { Request, Response } from "express";
 import { getPool } from "../config/database";
+import { RepositorioOrdenCompra } from "../Modelo/Repositorios/RepositorioOrdenCompra";
+import { RepositorioProveedor } from "../Modelo/Repositorios/RepositorioProveedor";
+
+const repoOrden = RepositorioOrdenCompra.obtenerInstancia();
+const repoProveedor = RepositorioProveedor.obtenerInstancia();
 
 export const mostrarReportes = (req: Request, res: Response): void => {
     res.render("reportes/index", {
         titulo: "Reportes"
     });
+};
+
+export const mostrarBusquedaOrdenesPorFecha = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const desde = typeof req.query.desde === "string" ? req.query.desde : "";
+        const hasta = typeof req.query.hasta === "string" ? req.query.hasta : "";
+
+        const ordenes = await repoOrden.obtenerTodos({
+            desde: desde || undefined,
+            hasta: hasta || undefined
+        });
+
+        const proveedores = await repoProveedor.obtenerTodos(true);
+        const proveedoresMap: Record<number, any> = {};
+        proveedores.forEach(pr => {
+            proveedoresMap[(pr as any).getId()] = pr;
+        });
+
+        res.render("reportes/busqueda-ordenes-fecha", {
+            titulo: "Búsqueda de Órdenes por Fecha",
+            ordenes,
+            proveedoresMap,
+            filtros: { desde, hasta },
+            error: null
+        });
+    } catch (error) {
+        console.error(error);
+        res.render("reportes/busqueda-ordenes-fecha", {
+            titulo: "Búsqueda de Órdenes por Fecha",
+            ordenes: [],
+            proveedoresMap: {},
+            filtros: { desde: "", hasta: "" },
+            error: "Error al buscar órdenes por fecha"
+        });
+    }
 };
 
 /**

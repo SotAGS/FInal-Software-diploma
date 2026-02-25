@@ -18,6 +18,7 @@
         <tr>
           <th>Nombre</th>
           <th>Contacto</th>
+          <th>Estado</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -26,11 +27,18 @@
           <tr>
             <td><strong><%= proveedor.getNombre() %></strong></td>
             <td><%= proveedor.getContacto() %></td>
+            <td><%= proveedor.esActivo() ? 'Activo' : 'Eliminado' %></td>
             <td>
-              <a href="/Proveedores/<%= proveedor.getId() %>/editar" class="btn btn-small btn-secondary">Editar</a>
-              <form method="POST" action="/Proveedores/<%= proveedor.getId() %>/eliminar" style="display: inline;" onsubmit="return confirm('¿Eliminar proveedor?');">
-                <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
-              </form>
+              <% if (proveedor.esActivo()) { %>
+                <a href="/Proveedores/<%= proveedor.getId() %>/editar" class="btn btn-small btn-secondary">Editar</a>
+                <form method="POST" action="/Proveedores/<%= proveedor.getId() %>/eliminar" style="display: inline;" onsubmit="return confirm('¿Eliminar proveedor?');">
+                  <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+                </form>
+              <% } else { %>
+                <form method="POST" action="/Proveedores/<%= proveedor.getId() %>/recuperar" style="display: inline;">
+                  <button type="submit" class="btn btn-small btn-primary">Recuperar</button>
+                </form>
+              <% } %>
             </td>
           </tr>
         <% }); %>

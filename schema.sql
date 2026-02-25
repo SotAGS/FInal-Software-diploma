@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(150) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
+    backup_email VARCHAR(100) NULL,
     contrasena VARCHAR(255) NOT NULL,
     rol_id INT NOT NULL,
     activo BOOLEAN DEFAULT TRUE,
@@ -56,9 +57,11 @@ CREATE TABLE IF NOT EXISTS productos (
 CREATE TABLE IF NOT EXISTS ordenes_compra (
     id INT PRIMARY KEY AUTO_INCREMENT,
     proveedor_id INT NOT NULL,
+    usuario_creador_id INT NULL,
     estado VARCHAR(50) NOT NULL DEFAULT 'EstadoPendiente',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (proveedor_id) REFERENCES proveedores(id)
+    FOREIGN KEY (proveedor_id) REFERENCES proveedores(id),
+    FOREIGN KEY (usuario_creador_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
 -- Tabla de Items en Órdenes de Compra
@@ -104,6 +107,19 @@ CREATE TABLE IF NOT EXISTS auditoria (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
 
+-- Tabla de recuperación de contraseña
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    usuario_id INT NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    token VARCHAR(128) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_password_resets_token (token),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
 -- Insertar roles iniciales
 INSERT IGNORE INTO roles (id, nombre, descripcion) VALUES 
 (1, 'ADMIN', 'Administrador del sistema'),
@@ -129,4 +145,4 @@ INSERT IGNORE INTO rol_permisos (rol_id, codigo_permiso, descripcion_permiso) VA
 
 -- Insertar usuario administrador de prueba (contraseña: admin123)
 INSERT IGNORE INTO usuarios (id, nombre, email, contrasena, rol_id) VALUES 
-(1, 'Administrador', 'admin@example.com', 'admin123', 1);
+(1, 'Administrador', 'admin@example.com', '$2b$10$qBGMRPPaq69Uu2fj.PhRpOn/tNGsBUl2DMtt5KicOk3KIKsOReMEW', 1);

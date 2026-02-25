@@ -7,7 +7,7 @@ const repoProducto = RepositorioProducto.obtenerInstancia();
    LISTADO
 =========================== */
 export const listarProductos = async (req: any, res: Response): Promise<void> => {
-    const productos = await repoProducto.obtenerTodos();
+    const productos = await repoProducto.obtenerTodos(true);
     res.render("Inventario/listado", {
         productos
     });
@@ -69,7 +69,39 @@ export const crearProducto = async (req: any, res: Response): Promise<void> => {
 export const eliminarProducto = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
 
+    const producto = await repoProducto.buscarPorId(id, true);
+    if (!producto) {
+        res.status(404).send("Producto no encontrado");
+        return;
+    }
+
+    if (!producto.esActivo()) {
+        res.redirect("/inventario/listado");
+        return;
+    }
+
     await repoProducto.eliminar(id);
 
+    res.redirect("/inventario/listado");
+};
+
+/* ===========================
+   RECUPERAR
+=========================== */
+export const recuperarProducto = async (req: any, res: Response): Promise<void> => {
+    const id = Number(req.params.id);
+
+    const producto = await repoProducto.buscarPorId(id, true);
+    if (!producto) {
+        res.status(404).send("Producto no encontrado");
+        return;
+    }
+
+    if (producto.esActivo()) {
+        res.redirect("/inventario/listado");
+        return;
+    }
+
+    await repoProducto.recuperar(id);
     res.redirect("/inventario/listado");
 };

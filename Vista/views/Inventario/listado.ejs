@@ -9,6 +9,7 @@
       <th>Nombre</th>
       <th>Precio</th>
       <th>Stock</th>
+      <th>Estado</th>
       <% if (puedeEditar || puedeEliminar) { %>
         <th>Acciones</th>
       <% } %>
@@ -19,16 +20,22 @@
         <td><%= p.getNombre() %></td>
         <td>$<%= p.getPrecio() %></td>
         <td><%= p.getStock() %></td>
+        <td><%= p.esActivo() ? 'Activo' : 'Eliminado' %></td>
 
         <% if (puedeEditar || puedeEliminar) { %>
           <td>
-            <% if (puedeEliminar) { %>
+            <% if (puedeEditar && p.esActivo()) { %>
+              <a class="btn-primary" href="/inventario/editar/<%= p.getId() %>">Editar</a>
+            <% } %>
+            <% if (puedeEliminar && p.esActivo()) { %>
               <form method="POST" action="/inventario/eliminar/<%= p.getId() %>" style="display:inline">
                 <button class="btn-danger">Eliminar</button>
               </form>
             <% } %>
-            <% if (puedeEditar) { %>
-              <a class="btn-primary" href="/inventario/editar/<%= p.getId() %>">Editar</a>
+            <% if (puedeEliminar && !p.esActivo()) { %>
+              <form method="POST" action="/inventario/recuperar/<%= p.getId() %>" style="display:inline">
+                <button class="btn-primary" type="submit">Recuperar</button>
+              </form>
             <% } %>
           </td>
         <% } %>

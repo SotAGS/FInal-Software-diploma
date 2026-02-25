@@ -12,4 +12,4 @@ INSERT IGNORE INTO roles (id, nombre, descripcion) VALUES
 
 -- Insertar usuario administrador de prueba (contraseña: admin123)
 INSERT IGNORE INTO usuarios (id, nombre, email, password, rol, activo, fecha_creacion) VALUES 
-(1, 'Administrador', 'admin@empresa.com', 'admin123', 'ADMIN', TRUE, NOW());
+(1, 'Administrador', 'admin@empresa.com', '$2b$10$qBGMRPPaq69Uu2fj.PhRpOn/tNGsBUl2DMtt5KicOk3KIKsOReMEW', 'ADMIN', TRUE, NOW());

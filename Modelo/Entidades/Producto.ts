@@ -4,7 +4,8 @@ export class Producto {
         private id: number,
         private nombre: string,
         private precio: number,
-        private stock: number
+        private stock: number,
+        private activo: boolean = true
     ) {}
 
     getId(): number {
@@ -21,6 +22,10 @@ export class Producto {
 
     getStock(): number {
         return this.stock;
+    }
+
+    esActivo(): boolean {
+        return this.activo;
     }
 
     setNombre(nombre: string): void {

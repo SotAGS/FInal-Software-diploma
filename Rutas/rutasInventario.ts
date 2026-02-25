@@ -6,7 +6,8 @@ import {
     mostrarEditarProducto,
     editarProducto,
     crearProducto,
-    eliminarProducto
+    eliminarProducto,
+    recuperarProducto
 } from "../Controladoras/controladoraProducto";
 import { mostrarInventario } from "../Controladoras/controladoraInventario";
 
@@ -45,6 +46,11 @@ router.post("/crear",
 router.post("/eliminar/:id",
     requierePermiso("ELIMINAR_PRODUCTO"),
     eliminarProducto
+);
+
+router.post("/recuperar/:id",
+    requierePermiso("ELIMINAR_PRODUCTO"),
+    recuperarProducto
 );
 
 export default router;

@@ -6,9 +6,9 @@ const repoProveedor = RepositorioProveedor.obtenerInstancia();
 /* ===========================
    LISTAR PROVEEDORES
 =========================== */
-export const listarProveedores = (req: any, res: Response): void => {
+export const listarProveedores = async (req: any, res: Response): Promise<void> => {
     try {
-        const proveedores = repoProveedor.obtenerTodos();
+        const proveedores = await repoProveedor.obtenerTodos(true);
         const success = typeof req.query.success === "string" ? req.query.success : null;
         const error = typeof req.query.error === "string" ? req.query.error : null;
 
@@ -44,7 +44,7 @@ export const mostrarFormularioCrearProveedor = (req: any, res: Response): void =
 /* ===========================
    CREAR PROVEEDOR
 =========================== */
-export const crearProveedor = (req: any, res: Response): void => {
+export const crearProveedor = async (req: any, res: Response): Promise<void> => {
     const { nombre, contacto } = req.body;
 
     if (!nombre || !contacto) {
@@ -56,16 +56,16 @@ export const crearProveedor = (req: any, res: Response): void => {
         });
     }
 
-    repoProveedor.crear(nombre, contacto);
+    await repoProveedor.crear(nombre, contacto);
     res.redirect("/Proveedores?success=Proveedor creado correctamente");
 };
 
 /* ===========================
    MOSTRAR FORMULARIO EDITAR
 =========================== */
-export const mostrarFormularioEditarProveedor = (req: any, res: Response): void => {
+export const mostrarFormularioEditarProveedor = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const proveedor = repoProveedor.buscarPorId(id);
+    const proveedor = await repoProveedor.buscarPorId(id, true);
 
     if (!proveedor) {
         return res.redirect("/Proveedores?error=Proveedor no encontrado");
@@ -81,7 +81,7 @@ export const mostrarFormularioEditarProveedor = (req: any, res: Response): void 
 /* ===========================
    ACTUALIZAR PROVEEDOR
 =========================== */
-export const actualizarProveedor = (req: any, res: Response): void => {
+export const actualizarProveedor = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
     const { nombre, contacto } = req.body;
 
@@ -89,11 +89,11 @@ export const actualizarProveedor = (req: any, res: Response): void => {
         return res.status(400).render("proveedores/editar", {
             titulo: "Editar Proveedor",
             error: "Debe completar todos los campos",
-            proveedor: repoProveedor.buscarPorId(id)
+            proveedor: await repoProveedor.buscarPorId(id, true)
         });
     }
 
-    const actualizado = repoProveedor.actualizar(id, nombre, contacto);
+    const actualizado = await repoProveedor.actualizar(id, nombre, contacto);
     if (!actualizado) {
         return res.redirect("/Proveedores?error=Proveedor no encontrado");
     }
@@ -104,13 +104,47 @@ export const actualizarProveedor = (req: any, res: Response): void => {
 /* ===========================
    ELIMINAR PROVEEDOR
 =========================== */
-export const eliminarProveedor = (req: any, res: Response): void => {
+export const eliminarProveedor = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const eliminado = repoProveedor.eliminar(id);
+    const proveedor = await repoProveedor.buscarPorId(id, true);
+
+    if (!proveedor) {
+        return res.redirect("/Proveedores?error=Proveedor no encontrado");
+    }
+
+    if (!proveedor.esActivo()) {
+        return res.redirect("/Proveedores?error=El proveedor ya estaba eliminado");
+    }
+
+    const eliminado = await repoProveedor.eliminar(id);
 
     if (!eliminado) {
         return res.redirect("/Proveedores?error=Proveedor no encontrado");
     }
 
     res.redirect("/Proveedores?success=Proveedor eliminado correctamente");
+};
+
+/* ===========================
+   RECUPERAR PROVEEDOR
+=========================== */
+export const recuperarProveedor = async (req: any, res: Response): Promise<void> => {
+    const id = Number(req.params.id);
+    const proveedor = await repoProveedor.buscarPorId(id, true);
+
+    if (!proveedor) {
+        return res.redirect("/Proveedores?error=Proveedor no encontrado");
+    }
+
+    if (proveedor.esActivo()) {
+        return res.redirect("/Proveedores?error=El proveedor ya está activo");
+    }
+
+    const recuperado = await repoProveedor.recuperar(id);
+
+    if (!recuperado) {
+        return res.redirect("/Proveedores?error=No se pudo recuperar el proveedor");
+    }
+
+    res.redirect("/Proveedores?success=Proveedor recuperado correctamente");
 };

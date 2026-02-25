@@ -16,6 +16,7 @@ import rutasSeguridad from "./Rutas/rutasSeguridad";
 import rutasCompras from "./Rutas/rutasCompras";
 import rutasProveedores from "./Rutas/rutasProveedores";
 import rutasRoles from "./Rutas/rutasRoles";
+import rutasVentas from "./Rutas/rutasVentas";
 
 import { autenticado } from "./Middlewares/autenticacion";
 
@@ -185,6 +186,7 @@ app.use("/Compras", rutasCompras);
 app.use("/Proveedores", rutasProveedores);
 app.use("/proveedores", rutasProveedores);
 app.use("/Roles", rutasRoles);
+app.use("/Ventas", rutasVentas);
 
 /* ===========================
    HOME

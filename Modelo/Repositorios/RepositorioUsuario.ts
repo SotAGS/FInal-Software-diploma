@@ -9,6 +9,7 @@ export class RepositorioUsuario {
 
     private static roles: Map<string, Rol> = new Map();
     private static initialized = false;
+    private static backupEmailVerificado = false;
     private repoRol = new RepositorioRol();
 
     constructor() {
@@ -16,6 +17,28 @@ export class RepositorioUsuario {
             RepositorioUsuario.inicializarRoles();
             RepositorioUsuario.initialized = true;
         }
+    }
+
+    private async asegurarColumnaBackupEmail(): Promise<void> {
+        if (RepositorioUsuario.backupEmailVerificado) {
+            return;
+        }
+
+        const pool = getPool();
+        const [rows] = await pool.query<any[]>(
+            `SELECT COUNT(*) AS total
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'usuarios'
+               AND COLUMN_NAME = 'backup_email'`
+        );
+
+        const existe = Number((rows as any[])[0]?.total || 0) > 0;
+        if (!existe) {
+            await pool.query(`ALTER TABLE usuarios ADD COLUMN backup_email VARCHAR(100) NULL`);
+        }
+
+        RepositorioUsuario.backupEmailVerificado = true;
     }
 
     private static inicializarRoles() {
@@ -124,14 +147,15 @@ export class RepositorioUsuario {
        OBTENER TODOS LOS USUARIOS
     =========================== */
 
-    public async obtenerTodos(): Promise<Usuario[]> {
+    public async obtenerTodos(incluirInactivos: boolean = false): Promise<Usuario[]> {
         try {
+            await this.asegurarColumnaBackupEmail();
             const pool = getPool();
             const rolesDisponibles = await this.obtenerMapaRoles();
             const [rows] = await pool.query(
-                `SELECT u.id, u.nombre, u.email, u.contrasena, u.rol 
+                `SELECT u.id, u.nombre, u.email, u.backup_email, u.contrasena, u.rol, u.activo
                  FROM usuarios u 
-                 WHERE u.activo = TRUE 
+                 ${incluirInactivos ? "" : "WHERE u.activo = TRUE"}
                  ORDER BY u.nombre`
             );
 
@@ -143,7 +167,9 @@ export class RepositorioUsuario {
                     row.nombre,
                     row.email,
                     row.contrasena,
-                    rol
+                    rol,
+                    Boolean(row.activo),
+                    row.backup_email || null
                 );
             });
         } catch (error) {
@@ -158,12 +184,13 @@ export class RepositorioUsuario {
 
     public async buscarPorEmail(email: string): Promise<Usuario | undefined> {
         try {
+            await this.asegurarColumnaBackupEmail();
             const pool = getPool();
             const rolesDisponibles = await this.obtenerMapaRoles();
             const [rows] = await pool.query(
-                `SELECT u.id, u.nombre, u.email, u.contrasena, u.rol 
+                `SELECT u.id, u.nombre, u.email, u.backup_email, u.contrasena, u.rol 
                  FROM usuarios u 
-                 WHERE u.email = ? AND u.activo = TRUE`,
+                 WHERE LOWER(TRIM(u.email)) = LOWER(TRIM(?)) AND u.activo = TRUE`,
                 [email]
             );
 
@@ -175,10 +202,42 @@ export class RepositorioUsuario {
                 row.nombre,
                 row.email,
                 row.contrasena,
-                rolesDisponibles.get(row.rol) || RepositorioUsuario.roles.get("EMPLEADO")!
+                rolesDisponibles.get(row.rol) || RepositorioUsuario.roles.get("EMPLEADO")!,
+                true,
+                row.backup_email || null
             );
         } catch (error) {
             console.error("Error en buscarPorEmail:", error);
+            return undefined;
+        }
+    }
+
+    public async buscarPorBackupEmail(backupEmail: string): Promise<Usuario | undefined> {
+        try {
+            await this.asegurarColumnaBackupEmail();
+            const pool = getPool();
+            const rolesDisponibles = await this.obtenerMapaRoles();
+            const [rows] = await pool.query(
+                `SELECT u.id, u.nombre, u.email, u.backup_email, u.contrasena, u.rol, u.activo
+                 FROM usuarios u
+                 WHERE LOWER(TRIM(u.backup_email)) = LOWER(TRIM(?)) AND u.activo = TRUE`,
+                [backupEmail]
+            );
+
+            if ((rows as any[]).length === 0) return undefined;
+
+            const row = (rows as any[])[0];
+            return new Usuario(
+                row.id,
+                row.nombre,
+                row.email,
+                row.contrasena,
+                rolesDisponibles.get(row.rol) || RepositorioUsuario.roles.get("EMPLEADO")!,
+                Boolean(row.activo),
+                row.backup_email || null
+            );
+        } catch (error) {
+            console.error("Error en buscarPorBackupEmail:", error);
             return undefined;
         }
     }
@@ -187,14 +246,15 @@ export class RepositorioUsuario {
        BUSCAR POR ID
     =========================== */
 
-    public async buscarPorId(id: number): Promise<Usuario | undefined> {
+    public async buscarPorId(id: number, incluirInactivos: boolean = false): Promise<Usuario | undefined> {
         try {
+            await this.asegurarColumnaBackupEmail();
             const pool = getPool();
             const rolesDisponibles = await this.obtenerMapaRoles();
             const [rows] = await pool.query(
-                `SELECT u.id, u.nombre, u.email, u.contrasena, u.rol
+                `SELECT u.id, u.nombre, u.email, u.backup_email, u.contrasena, u.rol, u.activo
                  FROM usuarios u
-                 WHERE u.id = ? AND u.activo = TRUE`,
+                 WHERE u.id = ? ${incluirInactivos ? "" : "AND u.activo = TRUE"}`,
                 [id]
             );
 
@@ -206,7 +266,9 @@ export class RepositorioUsuario {
                 row.nombre,
                 row.email,
                 row.contrasena,
-                rolesDisponibles.get(row.rol) || RepositorioUsuario.roles.get("EMPLEADO")!
+                rolesDisponibles.get(row.rol) || RepositorioUsuario.roles.get("EMPLEADO")!,
+                Boolean(row.activo),
+                row.backup_email || null
             );
         } catch (error) {
             console.error("Error en buscarPorId:", error);
@@ -232,11 +294,12 @@ export class RepositorioUsuario {
     =========================== */
 
     public async crear(usuario: Usuario): Promise<boolean> {
+        await this.asegurarColumnaBackupEmail();
         const pool = getPool();
         await pool.query(
-            `INSERT INTO usuarios (nombre, email, contrasena, rol, activo, fecha_creacion) 
-             VALUES (?, ?, ?, ?, TRUE, NOW())`,
-            [usuario.getNombre(), usuario.getEmail(), usuario.getPassword(), usuario.getRol().nombre]
+            `INSERT INTO usuarios (nombre, email, backup_email, contrasena, rol, activo, fecha_creacion) 
+             VALUES (?, ?, ?, ?, ?, TRUE, NOW())`,
+            [usuario.getNombre(), usuario.getEmail(), usuario.getBackupEmail(), usuario.getPassword(), usuario.getRol().nombre]
         );
         return true;
     }
@@ -247,12 +310,13 @@ export class RepositorioUsuario {
 
     public async actualizar(usuario: Usuario): Promise<boolean> {
         try {
+            await this.asegurarColumnaBackupEmail();
             const pool = getPool();
             await pool.query(
                 `UPDATE usuarios 
-                 SET nombre = ?, email = ?, contrasena = ?, rol = ? 
+                 SET nombre = ?, email = ?, backup_email = ?, contrasena = ?, rol = ? 
                  WHERE id = ?`,
-                [usuario.getNombre(), usuario.getEmail(), usuario.getPassword(), usuario.getRol().nombre, usuario.getId()]
+                [usuario.getNombre(), usuario.getEmail(), usuario.getBackupEmail(), usuario.getPassword(), usuario.getRol().nombre, usuario.getId()]
             );
             return true;
         } catch (error) {
@@ -276,6 +340,93 @@ export class RepositorioUsuario {
         } catch (error) {
             console.error("Error al eliminar:", error);
             return false;
+        }
+    }
+
+    public async recuperar(id: number): Promise<boolean> {
+        try {
+            const pool = getPool();
+            await pool.query(
+                `UPDATE usuarios SET activo = TRUE WHERE id = ?`,
+                [id]
+            );
+            return true;
+        } catch (error) {
+            console.error("Error al recuperar:", error);
+            return false;
+        }
+    }
+
+    public async eliminarDefinitivo(id: number): Promise<boolean> {
+        const pool = getPool();
+        const conn = await pool.getConnection();
+
+        try {
+            await conn.beginTransaction();
+
+            const [tablaLoginLogout] = await conn.query<any[]>(
+                `SELECT COUNT(*) AS total
+                 FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'login_logout'`
+            );
+
+            const [tablaAuditoria] = await conn.query<any[]>(
+                `SELECT COUNT(*) AS total
+                 FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'auditoria'`
+            );
+
+            const [tablaPasswordResets] = await conn.query<any[]>(
+                `SELECT COUNT(*) AS total
+                 FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'password_resets'`
+            );
+
+                        const [columnaUsuarioCreador] = await conn.query<any[]>(
+                                `SELECT COUNT(*) AS total
+                                 FROM information_schema.COLUMNS
+                                 WHERE TABLE_SCHEMA = DATABASE()
+                                     AND TABLE_NAME = 'ordenes_compra'
+                                     AND COLUMN_NAME = 'usuario_creador_id'`
+                        );
+
+            const existeLoginLogout = Number((tablaLoginLogout as any[])[0]?.total || 0) > 0;
+            const existeAuditoria = Number((tablaAuditoria as any[])[0]?.total || 0) > 0;
+            const existePasswordResets = Number((tablaPasswordResets as any[])[0]?.total || 0) > 0;
+            const existeColumnaUsuarioCreador = Number((columnaUsuarioCreador as any[])[0]?.total || 0) > 0;
+
+            if (existeLoginLogout) {
+                await conn.query(`DELETE FROM login_logout WHERE usuario_id = ?`, [id]);
+            }
+
+            if (existeAuditoria) {
+                await conn.query(`DELETE FROM auditoria WHERE usuario_id = ?`, [id]);
+            }
+
+            if (existePasswordResets) {
+                await conn.query(`DELETE FROM password_resets WHERE usuario_id = ?`, [id]);
+            }
+
+            if (existeColumnaUsuarioCreador) {
+                await conn.query(
+                    `UPDATE ordenes_compra SET usuario_creador_id = NULL WHERE usuario_creador_id = ?`,
+                    [id]
+                );
+            }
+
+            await conn.query(
+                `DELETE FROM usuarios WHERE id = ?`,
+                [id]
+            );
+
+            await conn.commit();
+            return true;
+        } catch (error) {
+            await conn.rollback();
+            console.error("Error al eliminar definitivamente:", error);
+            return false;
+        } finally {
+            conn.release();
         }
     }
 
