@@ -12,6 +12,13 @@
     <div class="alert alert-error"><%= error %></div>
   <% } %>
 
+  <input
+    id="filtroUsuarios"
+    type="text"
+    placeholder="Buscar usuario por nombre, email o rol..."
+    class="filtro-input"
+  />
+
   <% if (usuarios && usuarios.length > 0) { %>
     <table class="usuarios-table">
       <thead>
@@ -25,7 +32,7 @@
       </thead>
       <tbody>
         <% usuarios.forEach(usuario => { %>
-          <tr>
+          <tr data-usuario-row data-search="<%= (usuario.getNombre() + ' ' + usuario.getEmail() + ' ' + usuario.getRol().nombre).toLowerCase() %>">
             <td><strong><%= usuario.getNombre() %></strong></td>
             <td><%= usuario.getEmail() %></td>
             <td><span class="badge badge-info"><%= usuario.getRol().nombre %></span></td>
@@ -79,6 +86,15 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     overflow: hidden;
+  }
+
+  .filtro-input {
+    width: 100%;
+    max-width: 420px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 12px;
   }
 
   .usuarios-table th,
@@ -209,3 +225,23 @@
     font-style: italic;
   }
 </style>
+
+<script>
+  (function () {
+    const input = document.getElementById('filtroUsuarios');
+    if (!input) return;
+
+    const rows = Array.from(document.querySelectorAll('[data-usuario-row]'));
+
+    const filtrar = () => {
+      const termino = input.value.trim().toLowerCase();
+      rows.forEach((row) => {
+        const texto = (row.getAttribute('data-search') || '').toLowerCase();
+        const visible = !termino || texto.includes(termino);
+        row.style.display = visible ? '' : 'none';
+      });
+    };
+
+    input.addEventListener('input', filtrar);
+  })();
+</script>

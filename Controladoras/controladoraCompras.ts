@@ -55,6 +55,20 @@ export const agregarAlCarrito = (req: any, res: Response): void => {
     const { productoId, cantidad } = req.body;
     const pid = Number(productoId);
     const qty = Number(cantidad) || 0;
+    if (!Number.isFinite(pid) || pid <= 0 || !Number.isFinite(qty) || qty <= 0) {
+        if (req.session) {
+            req.session.message = "Debe seleccionar un producto válido y una cantidad mayor a 0.";
+            req.session.save((err: any) => {
+                if (err) {
+                    console.error("ERROR guardando sesión:", err);
+                }
+                res.redirect("/Compras/crear");
+            });
+            return;
+        }
+        res.redirect("/Compras/crear");
+        return;
+    }
     console.log("AGREGAR AL CARRITO - PID:", pid, "Qty:", qty, "Session antes:", req.session?.cart);
     if (!req.session) req.session = {};
     req.session.cart = req.session.cart || [];
@@ -219,6 +233,13 @@ export const cerrarConFaltante = async (req: any, res: Response): Promise<void> 
     const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     const userId = req.session?.usuarioId || 0;
+    const estado = orden.estado.constructor.name;
+
+    if (estado === 'EstadoCancelado' || estado === 'EstadoCerrado' || estado === 'EstadoCerradoConFaltante' || estado === 'EstadoCompleto') {
+        req.session.message = "La orden ya está finalizada y no permite cerrar con faltante.";
+        res.redirect('/Compras');
+        return;
+    }
 
     const totalFaltante = (orden.itemsFaltantes || []).reduce((acc, item) => acc + Number(item.cantidadFaltante || 0), 0);
     if (totalFaltante <= 0) {
@@ -227,8 +248,13 @@ export const cerrarConFaltante = async (req: any, res: Response): Promise<void> 
         return;
     }
 
-    orden.cerrarConFaltante(userId);
-    await repoOrden.guardarCambios(orden);
+    try {
+        orden.cerrarConFaltante(userId);
+        await repoOrden.guardarCambios(orden);
+    } catch (e) {
+        console.error(e);
+        req.session.message = 'No se pudo cerrar con faltante en este estado.';
+    }
     res.redirect("/Compras");
 };
 
@@ -237,6 +263,14 @@ export const cerrarOrden = async (req: any, res: Response): Promise<void> => {
     const orden = await repoOrden.buscarPorId(id);
     if (!orden) { res.status(404).send("Orden no encontrada"); return; }
     const userId = req.session?.usuarioId || 0;
+    const estado = orden.estado.constructor.name;
+
+    if (estado === 'EstadoCancelado' || estado === 'EstadoCerrado' || estado === 'EstadoCerradoConFaltante' || estado === 'EstadoCompleto') {
+        req.session.message = 'La orden ya está finalizada y no permite cierre completo.';
+        res.redirect('/Compras');
+        return;
+    }
+
     try {
         // Incrementar stock con TODO lo solicitado (cierre completo sin faltantes)
         for (const item of orden.items) {
@@ -282,6 +316,22 @@ export const guardarFaltantes = async (req: any, res: Response): Promise<void> =
                 faltantes.push({ productoId, cantidadFaltante });
             }
         }
+    }
+
+    const cantidadesSolicitadas = new Map<number, number>();
+    (orden.items || []).forEach((item: any) => {
+        cantidadesSolicitadas.set(item.productoId, Number(item.cantidad) || 0);
+    });
+
+    const faltanteInvalido = faltantes.find((item) => {
+        const cantidadSolicitada = cantidadesSolicitadas.get(item.productoId) || 0;
+        return item.cantidadFaltante > cantidadSolicitada;
+    });
+
+    if (faltanteInvalido) {
+        req.session.message = `El faltante informado para el producto ${faltanteInvalido.productoId} supera la cantidad solicitada.`;
+        res.redirect(`/Compras/faltante/${id}`);
+        return;
     }
     
     try {

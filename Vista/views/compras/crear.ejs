@@ -6,61 +6,157 @@
   </div>
 <% } %>
 
-<div style="display:flex;gap:40px">
-  <div>
-    <h3>Productos</h3>
-    <form method="POST" action="/Compras/cart/add">
-      <select name="productoId">
+<div class="compras-crear-layout">
+  <div class="bloque-principal">
+    <h3>Seleccione producto</h3>
+    <form method="POST" action="/Compras/cart/add" class="form-agregar-carrito">
+      <input
+        type="text"
+        id="filtroProductosCompra"
+        placeholder="Buscar producto por nombre o proveedor..."
+        class="input-filtro"
+      />
+      <select name="productoId" id="selectProductosCompra" size="10" class="select-productos">
         <% productos.forEach(function(p){ %>
-          <option value="<%= p.getId() %>">
+          <% const proveedorNombre = (typeof proveedoresMap !== 'undefined' && p.getProveedorId() && proveedoresMap[p.getProveedorId()])
+              ? proveedoresMap[p.getProveedorId()].getNombre()
+              : 'Sin proveedor'; %>
+          <option value="<%= p.getId() %>" data-search="<%= (p.getNombre() + ' ' + proveedorNombre).toLowerCase() %>">
             <%= p.getNombre() %> - $<%= p.getPrecio() %> (stock: <%= p.getStock() %>)
-            <% if (typeof proveedoresMap !== 'undefined' && p.getProveedorId() && proveedoresMap[p.getProveedorId()]) { %>
-              - Proveedor: <%= proveedoresMap[p.getProveedorId()].getNombre() %>
-            <% } else { %>
-              - Sin proveedor
-            <% } %>
+            - Proveedor: <%= proveedorNombre %>
           </option>
         <% }) %>
       </select>
-      <input type="number" name="cantidad" value="1" min="1" />
+      <label for="cantidadProducto" class="label-cantidad">Seleccione cantidad</label>
+      <input id="cantidadProducto" type="number" name="cantidad" value="1" min="1" class="input-cantidad" />
       <button class="btn-success">Añadir al carrito</button>
     </form>
   </div>
 
-  <div>
-    <h3>Carrito</h3>
-    <% if (cart && cart.length) { %>
-      <table>
-        <tr><th>Producto</th><th>Proveedor</th><th>Cantidad</th><th></th></tr>
-        <% cart.forEach(function(item){ 
-             const prod = productos.find(p => p.getId() === item.productoId);
-             const proveedorId = prod ? prod.getProveedorId() : undefined;
-             const proveedorNombre = (typeof proveedoresMap !== 'undefined' && proveedorId && proveedoresMap[proveedorId])
-                ? proveedoresMap[proveedorId].getNombre()
-                : 'Sin proveedor';
-        %>
-          <tr>
-            <td><%= prod ? prod.getNombre() : ('#'+item.productoId) %></td>
-            <td><%= proveedorNombre %></td>
-            <td><%= item.cantidad %></td>
-            <td>
-              <form method="POST" action="/Compras/cart/remove">
-                <input type="hidden" name="productoId" value="<%= item.productoId %>" />
-                <button class="btn-danger">Quitar</button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </table>
-    <% } else { %>
-      <p>El carrito está vacío</p>
-    <% } %>
+  <div class="bloques-detalle">
+    <div class="bloque-detalle">
+      <h3>Carrito</h3>
+      <% if (cart && cart.length) { %>
+        <table>
+          <tr><th>Producto</th><th>Proveedor</th><th>Cantidad</th><th></th></tr>
+          <% cart.forEach(function(item){ 
+               const prod = productos.find(p => p.getId() === item.productoId);
+               const proveedorId = prod ? prod.getProveedorId() : undefined;
+               const proveedorNombre = (typeof proveedoresMap !== 'undefined' && proveedorId && proveedoresMap[proveedorId])
+                  ? proveedoresMap[proveedorId].getNombre()
+                  : 'Sin proveedor';
+          %>
+            <tr>
+              <td><%= prod ? prod.getNombre() : ('#'+item.productoId) %></td>
+              <td><%= proveedorNombre %></td>
+              <td><%= item.cantidad %></td>
+              <td>
+                <form method="POST" action="/Compras/cart/remove">
+                  <input type="hidden" name="productoId" value="<%= item.productoId %>" />
+                  <button class="btn-danger">Quitar</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </table>
+      <% } else { %>
+        <p>El carrito está vacío</p>
+      <% } %>
+    </div>
 
-    <h3>Confirmar pedido</h3>
-    <form method="POST" action="/Compras/crear">
-      <p>El sistema creará automáticamente una orden por cada proveedor presente en el carrito.</p>
-      <br/><br/>
-      <button class="btn-success">Enviar orden</button>
-    </form>
+    <div class="bloque-detalle">
+      <h3>Confirmar pedido</h3>
+      <form method="POST" action="/Compras/crear">
+        <button class="btn-success">Enviar orden</button>
+      </form>
+    </div>
   </div>
 </div>
+
+<style>
+  .compras-crear-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .bloque-principal,
+  .bloque-detalle {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .form-agregar-carrito {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 520px;
+  }
+
+  .input-filtro,
+  .input-cantidad {
+    width: 100%;
+  }
+
+  .select-productos {
+    min-width: 420px;
+  }
+
+  .label-cantidad {
+    font-weight: 600;
+  }
+
+  .bloques-detalle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 56px;
+    align-items: start;
+  }
+
+  .bloques-detalle .bloque-detalle:last-child {
+    justify-self: end;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  @media (max-width: 900px) {
+    .bloques-detalle {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .bloques-detalle .bloque-detalle:last-child {
+      justify-self: stretch;
+      max-width: none;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const input = document.getElementById('filtroProductosCompra');
+    const select = document.getElementById('selectProductosCompra');
+    if (!input || !select) return;
+
+    const options = Array.from(select.options);
+
+    const filtrar = () => {
+      const termino = input.value.trim().toLowerCase();
+      let primerVisible = null;
+
+      options.forEach((opt) => {
+        const texto = (opt.getAttribute('data-search') || opt.textContent || '').toLowerCase();
+        const visible = !termino || texto.includes(termino);
+        opt.style.display = visible ? '' : 'none';
+        if (visible && !primerVisible) primerVisible = opt;
+      });
+
+      if (primerVisible && (select.selectedOptions.length === 0 || select.selectedOptions[0].style.display === 'none')) {
+        primerVisible.selected = true;
+      }
+    };
+
+    input.addEventListener('input', filtrar);
+  })();
+</script>

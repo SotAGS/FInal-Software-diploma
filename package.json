@@ -9,6 +9,8 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "migrate": "ts-node scripts/runMigrations.ts",
+    "migrate:prod": "node dist/scripts/runMigrations.js",
+    "start:railway": "npm run migrate:prod && npm start",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

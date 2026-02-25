@@ -1,6 +1,15 @@
 module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
+    transform: {
+        '^.+\\.(ts|tsx)$': ['ts-jest', {
+            tsconfig: {
+                esModuleInterop: true,
+                allowSyntheticDefaultImports: true,
+                types: ['jest', 'node']
+            }
+        }]
+    },
     roots: ['<rootDir>'],
     testMatch: ['**/__tests__/**/*.test.ts'],
     moduleFileExtensions: ['ts', 'js', 'json'],
@@ -16,14 +25,6 @@ module.exports = {
         '/dist/',
         '.d.ts'
     ],
-    globals: {
-        'ts-jest': {
-            tsconfig: {
-                esModuleInterop: true,
-                allowSyntheticDefaultImports: true
-            }
-        }
-    },
     setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
     testTimeout: 10000
 };

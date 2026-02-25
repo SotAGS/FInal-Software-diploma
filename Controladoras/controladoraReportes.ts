@@ -211,7 +211,12 @@ export const descargarReportePdf = async (req: Request, res: Response): Promise<
         }
 
         const cookieHeader = typeof req.headers.cookie === "string" ? req.headers.cookie : undefined;
-        const { filePath, fileName } = await generarReportePdf(reporte, cookieHeader, queryParams);
+        const forwardedProto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+        const protocolo = forwardedProto || req.protocol || "http";
+        const host = req.get("host") || "localhost:3000";
+        const baseUrl = `${protocolo}://${host}`;
+
+        const { filePath, fileName } = await generarReportePdf(reporte, cookieHeader, queryParams, baseUrl);
 
         res.download(filePath, fileName);
     } catch (error) {

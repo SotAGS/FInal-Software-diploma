@@ -4,7 +4,7 @@
   <% session.message = null; %>
 <% } %>
 
-<a href="/Compras/crear" class="btn-success">Crear Orden</a>
+<a href="/Compras/crear" class="btn-success btn-uniforme">Crear Orden</a>
 
 <table>
   <tr>
@@ -26,33 +26,33 @@
       <td>Pedido a <%= proveedorNombre %></td>
       <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
       <td><%= o.estado.constructor.name %></td>
-      <td>
-        <button class="btn-menu" data-target="det-act-<%= o['id'] %>">Ver pedido</button>
+      <td class="acciones-ordenes">
+        <button class="btn-menu btn-uniforme" data-target="det-act-<%= o['id'] %>">Ver pedido</button>
 
         <% if (o.estado.constructor.name === 'EstadoPendiente') { %>
           <% if (o.items && o.items.length) { %>
             <form method="POST" action="/Compras/recibir/<%= o['id'] %>" style="display:inline">
-              <button class="btn-success" onclick="return confirm('¿Confirmar recepción de los productos de la orden <%= o['id'] %>?')">Recibir</button>
+              <button class="btn-success btn-uniforme" onclick="return confirm('¿Confirmar recepción de los productos de la orden <%= o['id'] %>?')">Recibir</button>
             </form>
           <% } else { %>
-            <button class="btn-success" disabled title="La orden no tiene items">Recibir</button>
+            <button class="btn-success btn-uniforme" disabled title="La orden no tiene items">Recibir</button>
           <% } %>
 
           <form method="POST" action="/Compras/cancelar/<%= o['id'] %>" style="display:inline">
-            <button class="btn-danger" onclick="return confirm('¿Cancelar la orden <%= o['id'] %>?')">Cancelar</button>
+            <button class="btn-danger btn-uniforme" onclick="return confirm('¿Cancelar la orden <%= o['id'] %>?')">Cancelar</button>
           </form>
         <% } %>
 
         <% if (o.estado.constructor.name === 'EstadoParcialmenteCompleto') { %>
-          <a href="/Compras/faltante/<%= o['id'] %>" class="btn-warning">Cerrar con faltante</a>
+          <a href="/Compras/faltante/<%= o['id'] %>" class="btn-warning btn-uniforme">Cerrar con faltante</a>
           <form method="POST" action="/Compras/cerrar/<%= o['id'] %>" style="display:inline">
-            <button class="btn-primary" onclick="return confirm('¿Cerrar completo la orden <%= o['id'] %>?')">Cerrar completo</button>
+            <button class="btn-primary btn-uniforme" onclick="return confirm('¿Cerrar completo la orden <%= o['id'] %>?')">Cerrar completo</button>
           </form>
         <% } %>
 
         <% if (o.estado.constructor.name === 'EstadoCompleto') { %>
           <form method="POST" action="/Compras/cerrar/<%= o['id'] %>" style="display:inline">
-            <button class="btn-primary" onclick="return confirm('¿Cerrar la orden <%= o['id'] %>?')">Cerrar</button>
+            <button class="btn-primary btn-uniforme" onclick="return confirm('¿Cerrar la orden <%= o['id'] %>?')">Cerrar</button>
           </form>
         <% } %>
       </td>
@@ -93,7 +93,7 @@
         <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
         <td><%= o.estado.constructor.name %></td>
         <td>
-          <button class="btn-menu" data-target="det-<%= o['id'] %>">Menú</button>
+          <button class="btn-menu btn-uniforme" data-target="det-<%= o['id'] %>">Menú</button>
         </td>
       </tr>
       <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
@@ -135,7 +135,7 @@
         <td>Pedido a <%= proveedorNombre %></td>
         <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
         <td><%= o.estado.constructor.name %></td>
-        <td><button class="btn-menu" data-target="det-<%= o['id'] %>">Menú</button></td>
+        <td><button class="btn-menu btn-uniforme" data-target="det-<%= o['id'] %>">Menú</button></td>
       </tr>
       <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
         <td colspan="5">
@@ -187,7 +187,7 @@
         <td>Pedido a <%= proveedorNombre %></td>
         <td><%= new Date(o.getFechaCreacion()).toLocaleDateString('es-AR') %></td>
         <td><%= o.estado.constructor.name %></td>
-        <td><button class="btn-menu" data-target="det-<%= o['id'] %>">Menú</button></td>
+        <td><button class="btn-menu btn-uniforme" data-target="det-<%= o['id'] %>">Menú</button></td>
       </tr>
       <tr id="det-<%= o['id'] %>" class="detalle" style="display:none">
         <td colspan="5">
@@ -209,6 +209,29 @@
   <% } %>
 </table>
 </div>
+
+<style>
+  .btn-uniforme {
+    width: 170px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .acciones-ordenes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .acciones-ordenes form {
+    display: inline-flex !important;
+  }
+</style>
 
 <script>
   document.addEventListener('click', function(e){

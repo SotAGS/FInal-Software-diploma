@@ -11,6 +11,13 @@
   <div class="alert-error"><%= error %></div>
 <% } %>
 
+<input
+  id="filtroProductosListado"
+  type="text"
+  placeholder="Buscar producto por nombre o proveedor..."
+  class="filtro-input"
+/>
+
 <h2>Productos Activos</h2>
 <% if (productosActivos && productosActivos.length > 0) { %>
   <table>
@@ -25,7 +32,7 @@
     </tr>
 
     <% productosActivos.forEach(function(p) { %>
-      <tr>
+      <tr data-producto-row data-search="<%= (p.getNombre() + ' ' + (p.getProveedorId() ? (proveedoresMap[p.getProveedorId()] || ('#' + p.getProveedorId())) : 'sin proveedor')).toLowerCase() %>">
         <td><%= p.getNombre() %></td>
         <td>$<%= p.getPrecio() %></td>
         <td><%= p.getStock() %></td>
@@ -72,7 +79,7 @@
     </tr>
 
     <% productosEliminados.forEach(function(p) { %>
-      <tr>
+      <tr data-producto-row data-search="<%= (p.getNombre() + ' ' + (p.getProveedorId() ? (proveedoresMap[p.getProveedorId()] || ('#' + p.getProveedorId())) : 'sin proveedor')).toLowerCase() %>">
         <td><%= p.getNombre() %></td>
         <td>$<%= p.getPrecio() %></td>
         <td><%= p.getStock() %></td>
@@ -103,6 +110,16 @@
     border-radius: 6px;
   }
 
+  .filtro-input {
+    width: 100%;
+    max-width: 420px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+  }
+
   .alert-empty a {
     margin-left: 8px;
     font-weight: bold;
@@ -126,3 +143,23 @@
     border-radius: 6px;
   }
 </style>
+
+<script>
+  (function () {
+    const input = document.getElementById('filtroProductosListado');
+    if (!input) return;
+
+    const rows = Array.from(document.querySelectorAll('[data-producto-row]'));
+
+    const filtrar = () => {
+      const termino = input.value.trim().toLowerCase();
+      rows.forEach((row) => {
+        const texto = (row.getAttribute('data-search') || '').toLowerCase();
+        const visible = !termino || texto.includes(termino);
+        row.style.display = visible ? '' : 'none';
+      });
+    };
+
+    input.addEventListener('input', filtrar);
+  })();
+</script>

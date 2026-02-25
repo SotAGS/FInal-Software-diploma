@@ -23,7 +23,10 @@ import { autenticado } from "./Middlewares/autenticacion";
 const expressLayouts = require("express-ejs-layouts");
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
+const SESSION_SECRET = process.env.SESSION_SECRET || "clave_super_secreta";
+
+app.set("trust proxy", 1);
 
 /* ===========================
    INICIALIZAR BASE DE DATOS
@@ -42,9 +45,14 @@ app.use(express.urlencoded({ extended: true }));
    SESSION
 =========================== */
 app.use(session({
-  secret: "clave_super_secreta",
+  secret: SESSION_SECRET,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  }
 }));
 
 /* ===========================
@@ -129,46 +137,52 @@ app.use(express.static(staticPath));
 app.use(rutasSeguridad);
 
 /* ===========================
-   FIX BD (TEMPORAL - ELIMINAR DESPUÉS)
+   FIX BD (SOLO DESARROLLO)
 =========================== */
-app.get("/fix-tabla-usuarios", async (req, res) => {
-  try {
-    const { getPool } = await import("./config/database");
-    const pool = getPool();
-    
-    await pool.query(`SET FOREIGN_KEY_CHECKS = 0`);
-    await pool.query(`DROP TABLE IF EXISTS login_logout`);
-    await pool.query(`DROP TABLE IF EXISTS usuarios`);
-    
-    await pool.query(`
-      CREATE TABLE usuarios (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        nombre VARCHAR(100) NOT NULL,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        contrasena VARCHAR(255) NOT NULL,
-        rol VARCHAR(50) NOT NULL DEFAULT 'EMPLEADO',
-        activo BOOLEAN DEFAULT TRUE,
-        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    await pool.query(`
-      CREATE TABLE login_logout (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        usuario_id INT,
-        tipo_evento VARCHAR(20),
-        detalle VARCHAR(255),
-        fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
-      )
-    `);
-    
-    await pool.query(`SET FOREIGN_KEY_CHECKS = 1`);
-    
-    res.json({ success: true, message: "Tabla usuarios recreada correctamente" });
-  } catch (error) {
-    res.status(500).json({ error: String(error) });
-  }
+if (process.env.NODE_ENV !== "production") {
+  app.get("/fix-tabla-usuarios", async (req, res) => {
+    try {
+      const { getPool } = await import("./config/database");
+      const pool = getPool();
+      
+      await pool.query(`SET FOREIGN_KEY_CHECKS = 0`);
+      await pool.query(`DROP TABLE IF EXISTS login_logout`);
+      await pool.query(`DROP TABLE IF EXISTS usuarios`);
+      
+      await pool.query(`
+        CREATE TABLE usuarios (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          nombre VARCHAR(100) NOT NULL,
+          email VARCHAR(100) UNIQUE NOT NULL,
+          contrasena VARCHAR(255) NOT NULL,
+          rol VARCHAR(50) NOT NULL DEFAULT 'EMPLEADO',
+          activo BOOLEAN DEFAULT TRUE,
+          fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      await pool.query(`
+        CREATE TABLE login_logout (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          usuario_id INT,
+          tipo_evento VARCHAR(20),
+          detalle VARCHAR(255),
+          fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+        )
+      `);
+      
+      await pool.query(`SET FOREIGN_KEY_CHECKS = 1`);
+      
+      res.json({ success: true, message: "Tabla usuarios recreada correctamente" });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+}
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true });
 });
 
 /* ===========================
@@ -205,7 +219,8 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log(`Abrir en: http://localhost:${PORT}`);
 });
 
 export default app;

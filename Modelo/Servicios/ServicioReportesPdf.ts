@@ -55,14 +55,15 @@ export const obtenerRutaReportePorKey = (reporte: ReportePdfKey): string => {
 export const generarReportePdf = async (
   reporte: ReportePdfKey,
   cookieHeader: string | undefined,
-  queryParams: Record<string, string | undefined> = {}
+  queryParams: Record<string, string | undefined> = {},
+  baseUrlOverride?: string
 ): Promise<{ filePath: string; fileName: string; outputDir: string }> => {
   const outputDir = obtenerCarpetaEscritorio();
   const timestamp = formatoTimestamp(new Date());
   const fileName = `${slugSeguro(reporte)}-${timestamp}.pdf`;
   const filePath = path.join(outputDir, fileName);
 
-  const baseUrl = process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+  const baseUrl = baseUrlOverride || process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
   const url = new URL(obtenerRutaReportePorKey(reporte), baseUrl);
 
   Object.entries(queryParams).forEach(([key, value]) => {

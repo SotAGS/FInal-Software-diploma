@@ -12,6 +12,13 @@
     <div class="alert alert-error"><%= error %></div>
   <% } %>
 
+  <input
+    id="filtroProveedores"
+    type="text"
+    placeholder="Buscar proveedor por nombre o contacto..."
+    class="filtro-input"
+  />
+
   <% if (proveedores && proveedores.length > 0) { %>
     <table class="proveedores-table">
       <thead>
@@ -24,7 +31,7 @@
       </thead>
       <tbody>
         <% proveedores.forEach(proveedor => { %>
-          <tr>
+          <tr data-proveedor-row data-search="<%= (proveedor.getNombre() + ' ' + proveedor.getContacto()).toLowerCase() %>">
             <td><strong><%= proveedor.getNombre() %></strong></td>
             <td><%= proveedor.getContacto() %></td>
             <td><%= proveedor.esActivo() ? 'Activo' : 'Eliminado' %></td>
@@ -79,6 +86,15 @@
     margin-top: 10px;
   }
 
+  .filtro-input {
+    width: 100%;
+    max-width: 420px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+
   .proveedores-table th,
   .proveedores-table td {
     padding: 10px;
@@ -124,3 +140,23 @@
     margin-top: 10px;
   }
 </style>
+
+<script>
+  (function () {
+    const input = document.getElementById('filtroProveedores');
+    if (!input) return;
+
+    const rows = Array.from(document.querySelectorAll('[data-proveedor-row]'));
+
+    const filtrar = () => {
+      const termino = input.value.trim().toLowerCase();
+      rows.forEach((row) => {
+        const texto = (row.getAttribute('data-search') || '').toLowerCase();
+        const visible = !termino || texto.includes(termino);
+        row.style.display = visible ? '' : 'none';
+      });
+    };
+
+    input.addEventListener('input', filtrar);
+  })();
+</script>
