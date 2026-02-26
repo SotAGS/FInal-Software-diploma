@@ -8,6 +8,7 @@ import { getPool } from "../config/database";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
+import dns from "dns";
 
 const repoUsuario = new RepositorioUsuario();
 const BCRYPT_ROUNDS = 10;
@@ -96,6 +97,8 @@ const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Pr
         console.log("[RECUPERAR PASSWORD] SMTP no configurado. Link de recuperación:", resetUrl);
         return false;
     }
+
+    dns.setDefaultResultOrder("ipv4first");
 
     const transporter = nodemailer.createTransport({
         host,
