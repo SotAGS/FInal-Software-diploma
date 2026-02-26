@@ -172,6 +172,54 @@ type ResultadoRecuperacionPassword = {
     resetUrl: string | null;
 };
 
+const resendEstaConfigurado = (): boolean => {
+    const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+    const from = String(process.env.RESEND_FROM || process.env.SMTP_FROM || "").trim();
+    return Boolean(apiKey && from);
+};
+
+const enviarCorreoRecuperacionPorResend = async (emailDestino: string, token: string): Promise<boolean> => {
+    const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+    const from = String(process.env.RESEND_FROM || process.env.SMTP_FROM || "").trim();
+    const resetUrl = construirResetUrl(token);
+
+    if (!apiKey || !from) {
+        return false;
+    }
+
+    try {
+        const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                from,
+                to: [emailDestino],
+                subject: "Recuperación de contraseña",
+                text: `Recibimos una solicitud para restablecer tu contraseña. Usa este enlace: ${resetUrl}. El enlace vence en 1 hora.`,
+                html: `
+                    <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+                    <p><a href="${resetUrl}">Haz clic aquí para restablecerla</a></p>
+                    <p>Este enlace vence en 1 hora.</p>
+                `
+            })
+        });
+
+        if (!response.ok) {
+            const detalle = await response.text();
+            console.error("[RECUPERAR PASSWORD] Error enviando correo por Resend:", response.status, detalle);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error("[RECUPERAR PASSWORD] Error de red enviando por Resend:", error);
+        return false;
+    }
+};
+
 const solicitarRecuperacionPorEmailPrincipal = async (emailPrincipal: string): Promise<ResultadoRecuperacionPassword> => {
     const email = emailPrincipal.trim().toLowerCase();
 
@@ -219,16 +267,24 @@ const solicitarRecuperacionPorEmailPrincipal = async (emailPrincipal: string): P
 
     const resetUrl = construirResetUrl(token);
 
-    if (!smtpEstaConfigurado()) {
+    if (!smtpEstaConfigurado() && !resendEstaConfigurado()) {
         console.log("[RECUPERAR PASSWORD] SMTP no configurado. Link de recuperación:", resetUrl);
         return {
             ok: true,
-            mensaje: `SMTP no configurado. Se generó un enlace para recuperar la contraseña de ${email}.`,
+            mensaje: `Servicio de correo no configurado. Se generó un enlace para recuperar la contraseña de ${email}.`,
             resetUrl
         };
     }
 
-    const enviado = await enviarCorreoRecuperacion(emailDestino, token);
+    let enviado = false;
+
+    if (resendEstaConfigurado()) {
+        enviado = await enviarCorreoRecuperacionPorResend(emailDestino, token);
+    }
+
+    if (!enviado && smtpEstaConfigurado()) {
+        enviado = await enviarCorreoRecuperacion(emailDestino, token);
+    }
 
     if (!enviado) {
         return {
