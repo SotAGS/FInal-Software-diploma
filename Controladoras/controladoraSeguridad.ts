@@ -68,11 +68,21 @@ const construirResetUrl = (token: string): string => {
     return `${baseUrl}/reset-password?token=${token}`;
 };
 
+const obtenerConfigSmtp = () => {
+    const host = String(process.env.SMTP_HOST || "").trim();
+    const user = String(process.env.SMTP_USER || "").trim();
+    const passRaw = String(process.env.SMTP_PASS || "").trim();
+    const pass = passRaw.replace(/\s+/g, "");
+    const from = String(process.env.SMTP_FROM || user).trim();
+    const portValor = Number(String(process.env.SMTP_PORT || "587").trim());
+    const port = Number.isFinite(portValor) && portValor > 0 ? portValor : 587;
+    const secure = port === 465;
+
+    return { host, user, pass, from, port, secure };
+};
+
 const smtpEstaConfigurado = (): boolean => {
-    const host = process.env.SMTP_HOST;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const from = process.env.SMTP_FROM || user;
+    const { host, user, pass, from } = obtenerConfigSmtp();
 
     return Boolean(host && user && pass && from);
 };
@@ -80,23 +90,21 @@ const smtpEstaConfigurado = (): boolean => {
 const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Promise<boolean> => {
     const resetUrl = construirResetUrl(token);
 
-    const host = process.env.SMTP_HOST;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const from = process.env.SMTP_FROM || user;
+    const { host, user, pass, from, port, secure } = obtenerConfigSmtp();
 
     if (!host || !user || !pass || !from) {
         console.log("[RECUPERAR PASSWORD] SMTP no configurado. Link de recuperación:", resetUrl);
         return false;
     }
 
-    const port = Number(process.env.SMTP_PORT || 587);
-    const secure = port === 465;
-
     const transporter = nodemailer.createTransport({
         host,
         port,
         secure,
+        requireTLS: !secure,
+        tls: {
+            minVersion: "TLSv1.2"
+        },
         connectionTimeout: 10000,
         greetingTimeout: 10000,
         socketTimeout: 15000,
@@ -107,6 +115,8 @@ const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Pr
     });
 
     try {
+        await transporter.verify();
+
         await Promise.race([
             transporter.sendMail({
             from,
