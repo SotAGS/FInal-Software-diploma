@@ -56,6 +56,18 @@ async function runMigrations() {
                     .filter(s => s.length > 0 && !s.startsWith('--'));
 
                 for (const statement of statements) {
+                    const statementNormalizado = statement.replace(/\s+/g, ' ').trim();
+
+                    if (/^USE\s+/i.test(statementNormalizado)) {
+                        console.log(`⏭️ Omitiendo sentencia USE en ${file}`);
+                        continue;
+                    }
+
+                    if (/^CREATE\s+DATABASE\s+/i.test(statementNormalizado)) {
+                        console.log(`⏭️ Omitiendo CREATE DATABASE en ${file}`);
+                        continue;
+                    }
+
                     await pool.query(statement);
                 }
 
