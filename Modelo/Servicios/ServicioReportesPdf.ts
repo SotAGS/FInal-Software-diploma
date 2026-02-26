@@ -1,12 +1,53 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { execSync } from "child_process";
 
 const puppeteerCacheDir = path.join(process.cwd(), ".cache", "puppeteer");
 
 const obtenerPuppeteer = async () => {
   process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || puppeteerCacheDir;
   return import("puppeteer");
+};
+
+const existeArchivo = (ruta?: string): boolean => {
+  return Boolean(ruta && fs.existsSync(ruta));
+};
+
+const resolverExecutablePath = async (puppeteer: any): Promise<string> => {
+  const cacheDir = process.env.PUPPETEER_CACHE_DIR || puppeteerCacheDir;
+  fs.mkdirSync(cacheDir, { recursive: true });
+
+  const ejecutableConfigurado = String(process.env.PUPPETEER_EXECUTABLE_PATH || "").trim();
+  if (ejecutableConfigurado && existeArchivo(ejecutableConfigurado)) {
+    return ejecutableConfigurado;
+  }
+
+  let ejecutable = puppeteer.executablePath();
+  if (existeArchivo(ejecutable)) {
+    return ejecutable;
+  }
+
+  console.warn("[PDF] Chrome no encontrado, instalando navegador de Puppeteer...");
+
+  try {
+    execSync("npx puppeteer browsers install chrome", {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        PUPPETEER_CACHE_DIR: cacheDir
+      }
+    });
+  } catch (error) {
+    console.error("[PDF] No se pudo instalar Chrome de Puppeteer:", (error as any)?.message || error);
+  }
+
+  ejecutable = puppeteer.executablePath();
+  if (existeArchivo(ejecutable)) {
+    return ejecutable;
+  }
+
+  throw new Error(`Browser no encontrado en ruta esperada: ${ejecutable}`);
 };
 
 export type ReportePdfKey =
@@ -73,9 +114,10 @@ export const generarReportePdf = async (
 
   url.searchParams.set("pdf", "1");
 
-  const puppeteer = await obtenerPuppeteer();
+  const puppeteerModule = await obtenerPuppeteer();
+  const puppeteer = puppeteerModule.default;
 
-  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath();
+  const executablePath = await resolverExecutablePath(puppeteer);
 
   const browser = await puppeteer.launch({
     executablePath,
