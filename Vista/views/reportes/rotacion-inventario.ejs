@@ -90,6 +90,8 @@
   if (datos.length > 0) {
     // Gráfico de categorías
     const ctx = document.getElementById('categoriaChart').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const chartTextColor = isDark ? '#e5e7eb' : '#374151';
     
     const criticos = datos.filter(d => d.categoria_stock === 'CRÍTICO').length;
     const bajos = datos.filter(d => d.categoria_stock === 'BAJO').length;
@@ -122,11 +124,15 @@
         maintainAspectRatio: true,
         plugins: {
           legend: {
-            position: 'bottom'
+            position: 'bottom',
+            labels: {
+              color: chartTextColor
+            }
           },
           title: {
             display: true,
-            text: 'Distribución de Productos por Categoría de Stock'
+            text: 'Distribución de Productos por Categoría de Stock',
+            color: chartTextColor
           }
         }
       }

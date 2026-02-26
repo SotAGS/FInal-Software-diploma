@@ -14,6 +14,7 @@ export interface RegistroRol {
     nombre: string;
     descripcion: string;
     permisos: string[];
+    activo: boolean;
 }
 
 export class RepositorioRol {
@@ -57,16 +58,17 @@ export class RepositorioRol {
         return [...RepositorioRol.CATALOGO_PERMISOS];
     }
 
-    public async obtenerTodos(): Promise<RegistroRol[]> {
+    public async obtenerTodos(incluirInactivos: boolean = false): Promise<RegistroRol[]> {
         const pool = getPool();
         await this.asegurarTablaRoles(pool);
         await this.asegurarTablaPermisos(pool);
         await this.asegurarPermisosBase(pool);
 
         const [rows] = await pool.query(
-            `SELECT r.id, r.nombre, r.descripcion, rp.codigo_permiso
+            `SELECT r.id, r.nombre, r.descripcion, r.activo, rp.codigo_permiso
              FROM roles r
              LEFT JOIN rol_permisos rp ON rp.rol_id = r.id
+             ${incluirInactivos ? "" : "WHERE r.activo = TRUE"}
              ORDER BY r.nombre, rp.codigo_permiso`
         );
 
@@ -78,7 +80,8 @@ export class RepositorioRol {
                     id: row.id,
                     nombre: row.nombre,
                     descripcion: row.descripcion || "",
-                    permisos: []
+                    permisos: [],
+                    activo: Boolean(row.activo)
                 });
             }
 
@@ -95,8 +98,8 @@ export class RepositorioRol {
         return roles.map(r => r.nombre);
     }
 
-    public async obtenerPorId(id: number): Promise<RegistroRol | undefined> {
-        const roles = await this.obtenerTodos();
+    public async obtenerPorId(id: number, incluirInactivos: boolean = false): Promise<RegistroRol | undefined> {
+        const roles = await this.obtenerTodos(incluirInactivos);
         return roles.find(r => r.id === id);
     }
 
@@ -202,7 +205,7 @@ export class RepositorioRol {
         await this.asegurarTablaPermisos(pool);
         await this.asegurarPermisosBase(pool);
         const [rows] = await pool.query(
-            `SELECT id, nombre FROM roles WHERE id = ?`,
+            `SELECT id, nombre, activo FROM roles WHERE id = ?`,
             [id]
         );
 
@@ -215,6 +218,10 @@ export class RepositorioRol {
             return { ok: false, motivo: "No se puede eliminar el rol ADMIN" };
         }
 
+        if (!Boolean(rol.activo)) {
+            return { ok: false, motivo: "El rol ya está eliminado" };
+        }
+
         const [usoRows] = await pool.query(
             `SELECT COUNT(*) AS total FROM usuarios WHERE rol = ? AND activo = TRUE`,
             [rol.nombre]
@@ -223,6 +230,64 @@ export class RepositorioRol {
         const enUso = Number((usoRows as any[])[0]?.total || 0);
         if (enUso > 0) {
             return { ok: false, motivo: "No se puede eliminar un rol asignado a usuarios activos" };
+        }
+
+        await pool.query(`UPDATE roles SET activo = FALSE WHERE id = ?`, [id]);
+        return { ok: true };
+    }
+
+    public async recuperar(id: number): Promise<{ ok: boolean; motivo?: string }> {
+        const pool = getPool();
+        await this.asegurarTablaRoles(pool);
+        await this.asegurarTablaPermisos(pool);
+        await this.asegurarPermisosBase(pool);
+
+        const [rows] = await pool.query(
+            `SELECT id, nombre, activo FROM roles WHERE id = ?`,
+            [id]
+        );
+
+        const rol = (rows as any[])[0];
+        if (!rol) {
+            return { ok: false, motivo: "Rol no encontrado" };
+        }
+
+        if (Boolean(rol.activo)) {
+            return { ok: false, motivo: "El rol ya está activo" };
+        }
+
+        await pool.query(`UPDATE roles SET activo = TRUE WHERE id = ?`, [id]);
+        return { ok: true };
+    }
+
+    public async eliminarDefinitivo(id: number): Promise<{ ok: boolean; motivo?: string }> {
+        const pool = getPool();
+        await this.asegurarTablaRoles(pool);
+        await this.asegurarTablaPermisos(pool);
+        await this.asegurarPermisosBase(pool);
+
+        const [rows] = await pool.query(
+            `SELECT id, nombre FROM roles WHERE id = ?`,
+            [id]
+        );
+
+        const rol = (rows as any[])[0];
+        if (!rol) {
+            return { ok: false, motivo: "Rol no encontrado" };
+        }
+
+        if (String(rol.nombre || "").toUpperCase() === "ADMIN") {
+            return { ok: false, motivo: "No se puede eliminar definitivamente el rol ADMIN" };
+        }
+
+        const [usoRows] = await pool.query(
+            `SELECT COUNT(*) AS total FROM usuarios WHERE rol = ?`,
+            [rol.nombre]
+        );
+
+        const enUso = Number((usoRows as any[])[0]?.total || 0);
+        if (enUso > 0) {
+            return { ok: false, motivo: "No se puede eliminar definitivamente un rol asignado a usuarios" };
         }
 
         await pool.query(`DELETE FROM roles WHERE id = ?`, [id]);
@@ -287,17 +352,36 @@ export class RepositorioRol {
             CREATE TABLE IF NOT EXISTS roles (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 nombre VARCHAR(100) NOT NULL UNIQUE,
-                descripcion VARCHAR(255)
+                descripcion VARCHAR(255),
+                activo BOOLEAN DEFAULT TRUE
             )
         `);
 
+        const [rows] = await executor.query(
+            `SELECT COUNT(*) AS total
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'roles'
+               AND COLUMN_NAME = 'activo'`
+        );
+
+        const existeActivo = Number((rows as any[])[0]?.total || 0) > 0;
+        if (!existeActivo) {
+            await executor.query(`ALTER TABLE roles ADD COLUMN activo BOOLEAN DEFAULT TRUE`);
+        }
+
         await executor.query(`UPDATE roles SET nombre = UPPER(nombre)`);
+        await executor.query(`UPDATE roles SET activo = TRUE WHERE activo IS NULL`);
 
         await executor.query(`
-            INSERT IGNORE INTO roles (nombre, descripcion) VALUES
-            ('ADMIN', 'Administrador del sistema'),
-            ('GERENTE', 'Gerente de compras'),
-            ('EMPLEADO', 'Usuario estándar')
+            INSERT IGNORE INTO roles (nombre, descripcion, activo) VALUES
+            ('ADMIN', 'Administrador del sistema', TRUE),
+            ('GERENTE', 'Gerente de compras', TRUE),
+            ('EMPLEADO', 'Usuario estándar', TRUE)
+        `);
+
+        await executor.query(`
+            UPDATE roles SET activo = TRUE WHERE UPPER(nombre) = 'ADMIN'
         `);
     }
 

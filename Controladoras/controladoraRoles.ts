@@ -20,10 +20,14 @@ const obtenerPermisosDesdeBody = (body: any): string[] => {
 
 export const listarRoles = async (req: any, res: Response): Promise<void> => {
     try {
-        const roles = await repoRol.obtenerTodos();
+        const registros = await repoRol.obtenerTodos(true);
+        const roles = registros.filter(r => r.activo);
+        const rolesEliminados = registros.filter(r => !r.activo);
+
         res.render("roles/index", {
             titulo: "Menú de Roles",
             roles,
+            rolesEliminados,
             error: req.query.error || null,
             success: req.query.success || null
         });
@@ -32,6 +36,7 @@ export const listarRoles = async (req: any, res: Response): Promise<void> => {
         res.status(500).render("roles/index", {
             titulo: "Menú de Roles",
             roles: [],
+            rolesEliminados: [],
             error: "Error al cargar roles",
             success: null
         });
@@ -188,7 +193,7 @@ export const actualizarRol = async (req: any, res: Response): Promise<void> => {
 export const eliminarRol = async (req: any, res: Response): Promise<void> => {
     try {
         const id = parseInt(req.params.id);
-        const rol = await repoRol.obtenerPorId(id);
+        const rol = await repoRol.obtenerPorId(id, true);
 
         if (!rol) {
             return res.redirect("/Roles?error=Rol no encontrado");
@@ -210,5 +215,53 @@ export const eliminarRol = async (req: any, res: Response): Promise<void> => {
     } catch (error) {
         console.error(error);
         res.redirect("/Roles?error=Error al eliminar el rol");
+    }
+};
+
+export const recuperarRol = async (req: any, res: Response): Promise<void> => {
+    try {
+        const id = parseInt(req.params.id);
+        const rol = await repoRol.obtenerPorId(id, true);
+
+        if (!rol) {
+            return res.redirect("/Roles?error=Rol no encontrado");
+        }
+
+        const resultado = await repoRol.recuperar(id);
+        if (!resultado.ok) {
+            return res.redirect(`/Roles?error=${encodeURIComponent(resultado.motivo || "No se pudo recuperar el rol")}`);
+        }
+
+        const servicio = ServicioAuditoria.obtenerInstancia();
+        await servicio.registrarCambio("Rol", id, "RECUPERAR", req.usuario?.getId() || 0, "ELIMINADO", rol.nombre);
+
+        res.redirect("/Roles?success=Rol recuperado exitosamente");
+    } catch (error) {
+        console.error(error);
+        res.redirect("/Roles?error=Error al recuperar el rol");
+    }
+};
+
+export const eliminarRolDefinitivo = async (req: any, res: Response): Promise<void> => {
+    try {
+        const id = parseInt(req.params.id);
+        const rol = await repoRol.obtenerPorId(id, true);
+
+        if (!rol) {
+            return res.redirect("/Roles?error=Rol no encontrado");
+        }
+
+        const resultado = await repoRol.eliminarDefinitivo(id);
+        if (!resultado.ok) {
+            return res.redirect(`/Roles?error=${encodeURIComponent(resultado.motivo || "No se pudo eliminar definitivamente el rol")}`);
+        }
+
+        const servicio = ServicioAuditoria.obtenerInstancia();
+        await servicio.registrarCambio("Rol", id, "ELIMINAR_DEFINITIVO", req.usuario?.getId() || 0, rol.nombre, "BORRADO_FISICO");
+
+        res.redirect("/Roles?success=Rol eliminado definitivamente");
+    } catch (error) {
+        console.error(error);
+        res.redirect("/Roles?error=Error al eliminar definitivamente el rol");
     }
 };

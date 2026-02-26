@@ -293,6 +293,194 @@ button {
 }
 
 /* =========================
+   THEME TOGGLE (GLOBAL)
+========================= */
+
+:root {
+  --app-bg: #eef2f1;
+  --app-text: #1f2937;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border: #e5e7eb;
+  --title: #166534;
+  --header-bg: #ffffff;
+  --header-text: #111827;
+  --sidebar-bg: #1B5E20;
+  --sidebar-link: #ffffff;
+  --table-head-bg: #f1f8f4;
+  --table-head-text: #166534;
+  --table-even: #f9fbfa;
+  --input-bg: #ffffff;
+  --input-text: #111827;
+  --input-border: #d1d5db;
+}
+
+html[data-theme="dark"] {
+  --app-bg: #10161b;
+  --app-text: #e5e7eb;
+  --surface: #11161d;
+  --surface-2: #0f141a;
+  --border: #2a323d;
+  --title: #86efac;
+  --header-bg: #0c1117;
+  --header-text: #f3f4f6;
+  --sidebar-bg: #0f5e1b;
+  --sidebar-link: #f3f4f6;
+  --table-head-bg: #0f3a2c;
+  --table-head-text: #86efac;
+  --table-even: #121922;
+  --input-bg: #0f141a;
+  --input-text: #f3f4f6;
+  --input-border: #334155;
+}
+
+body,
+.layout,
+.main,
+.main-container,
+.page-body,
+.content {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+.header {
+  background-color: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-left h2,
+.header-right,
+.header-right span,
+.header-right strong {
+  color: var(--header-text) !important;
+}
+
+.sidebar {
+  background-color: var(--sidebar-bg) !important;
+}
+
+.sidebar nav a,
+.logo {
+  color: var(--sidebar-link) !important;
+}
+
+.card-principal,
+.section-box,
+.roles-table,
+table,
+.alert {
+  background: var(--surface) !important;
+  color: var(--app-text) !important;
+  border-color: var(--border) !important;
+}
+
+.card-principal h1,
+.card-principal h2,
+.card-principal h3,
+.section-title,
+.total,
+p,
+label,
+li,
+td,
+th,
+div,
+span {
+  color: inherit;
+}
+
+th {
+  background-color: var(--table-head-bg) !important;
+  color: var(--table-head-text) !important;
+}
+
+tr:nth-child(even),
+.detalle td {
+  background-color: var(--table-even) !important;
+}
+
+input,
+select,
+textarea {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+.card-principal h1 {
+  color: var(--title) !important;
+}
+
+.btn-logout {
+  color: var(--title) !important;
+  border-color: var(--border) !important;
+}
+
+.theme-toggle {
+  background: transparent;
+  color: var(--header-text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.theme-toggle:hover {
+  background: var(--surface-2);
+}
+
+html[data-theme="dark"] .reportes-container,
+html[data-theme="dark"] .reportes-container .subtitle,
+html[data-theme="dark"] .reportes-container h2,
+html[data-theme="dark"] .reportes-container h3,
+html[data-theme="dark"] .reportes-container p,
+html[data-theme="dark"] .reportes-container label {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .reportes-container .report-section,
+html[data-theme="dark"] .reportes-container .stat-card,
+html[data-theme="dark"] .reportes-container .report-table,
+html[data-theme="dark"] .reportes-container .filtro-form,
+html[data-theme="dark"] .reportes-container .alert {
+  background-color: var(--surface) !important;
+  color: var(--app-text) !important;
+  border-color: var(--border) !important;
+}
+
+html[data-theme="dark"] .reportes-container .report-table th {
+  background-color: var(--table-head-bg) !important;
+  color: var(--table-head-text) !important;
+}
+
+html[data-theme="dark"] .reportes-container .report-table td,
+html[data-theme="dark"] .reportes-container .report-table tr,
+html[data-theme="dark"] .reportes-container .no-data,
+html[data-theme="dark"] .reportes-container .stat-label,
+html[data-theme="dark"] .reportes-container .stat-value {
+  color: var(--app-text) !important;
+}
+
+html[data-theme="dark"] .reportes-container .report-table tbody tr:hover {
+  background-color: var(--table-even) !important;
+}
+
+html[data-theme="dark"] .reportes-container .alert-info {
+  background-color: #1e293b !important;
+  color: #bfdbfe !important;
+  border-left-color: #60a5fa !important;
+}
+
+html[data-theme="dark"] .reportes-container .alert-error {
+  background-color: #3b1b1b !important;
+  color: #fecaca !important;
+  border-left-color: #f87171 !important;
+}
+
+/* =========================
    SECTIONS / RECUADROS
 ========================= */
 

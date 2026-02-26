@@ -68,6 +68,15 @@ const construirResetUrl = (token: string): string => {
     return `${baseUrl}/reset-password?token=${token}`;
 };
 
+const smtpEstaConfigurado = (): boolean => {
+    const host = process.env.SMTP_HOST;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const from = process.env.SMTP_FROM || user;
+
+    return Boolean(host && user && pass && from);
+};
+
 const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Promise<boolean> => {
     const resetUrl = construirResetUrl(token);
 
@@ -115,6 +124,85 @@ const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Pr
     }
 };
 
+type ResultadoRecuperacionPassword = {
+    ok: boolean;
+    mensaje: string;
+    resetUrl: string | null;
+};
+
+const solicitarRecuperacionPorEmailPrincipal = async (emailPrincipal: string): Promise<ResultadoRecuperacionPassword> => {
+    const email = emailPrincipal.trim().toLowerCase();
+
+    if (!email) {
+        return {
+            ok: false,
+            mensaje: "Debe ingresar un email",
+            resetUrl: null
+        };
+    }
+
+    await asegurarTablaRecuperacion();
+    const usuario = await repoUsuario.buscarPorEmail(email);
+
+    if (!usuario) {
+        return {
+            ok: false,
+            mensaje: "El email no coincide con ningún usuario registrado.",
+            resetUrl: null
+        };
+    }
+
+    const emailDestino = (usuario.getBackupEmail() || "").trim().toLowerCase();
+    if (!emailDestino) {
+        return {
+            ok: false,
+            mensaje: "Este usuario no tiene un mail de backup válido configurado.",
+            resetUrl: null
+        };
+    }
+
+    const pool = getPool();
+    const token = crypto.randomBytes(32).toString("hex");
+
+    await pool.query(
+        `DELETE FROM password_resets WHERE usuario_id = ? AND used_at IS NULL`,
+        [usuario.getId()]
+    );
+
+    await pool.query(
+        `INSERT INTO password_resets (usuario_id, email, token, expires_at)
+         VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))`,
+        [usuario.getId(), emailDestino, token]
+    );
+
+    const resetUrl = construirResetUrl(token);
+
+    if (!smtpEstaConfigurado()) {
+        console.log("[RECUPERAR PASSWORD] SMTP no configurado. Link de recuperación:", resetUrl);
+        return {
+            ok: true,
+            mensaje: `SMTP no configurado. Se generó un enlace para recuperar la contraseña de ${email}.`,
+            resetUrl
+        };
+    }
+
+    const enviado = await enviarCorreoRecuperacion(emailDestino, token);
+
+    if (!enviado) {
+        return {
+            ok: false,
+            mensaje: "No se pudo enviar el correo de recuperación. Intente nuevamente.",
+            resetUrl: null
+        };
+    }
+
+    return {
+        ok: true,
+        mensaje: `Correo de recuperación enviado al mail de backup de ${email}.`,
+        resetUrl: null
+    };
+};
+
 const buscarTokenValido = async (token: string): Promise<{ id: number; usuario_id: number } | null> => {
     const pool = getPool();
     const [rows] = await pool.query<any[]>(
@@ -156,7 +244,7 @@ export const mostrarLogin = (req: any, res: Response): void => {
     }
 
     res.render("seguridad/login", {
-        error: null,
+        error: typeof req.query.error === "string" ? req.query.error : null,
         success: typeof req.query.success === "string" ? req.query.success : null
     });
 };
@@ -619,81 +707,63 @@ export const eliminarUsuarioDefinitivo = async (req: any, res: Response): Promis
 /* ===========================
    RECUPERAR CONTRASEÑA
 =========================== */
-export const mostrarRecuperarPassword = (req: any, res: Response): void => {
-    res.render("seguridad/recuperar-password", {
-        error: null,
-        success: null,
-        resetLink: null,
-        emailPrefill: ""
-    });
+export const mostrarRecuperarPassword = async (req: any, res: Response): Promise<void> => {
+    const emailQuery = typeof req.query?.email === "string"
+        ? req.query.email.trim().toLowerCase()
+        : "";
+    const emailSesion = typeof req.session?.lastLoginEmail === "string"
+        ? req.session.lastLoginEmail.trim().toLowerCase()
+        : "";
+    const emailObjetivo = emailQuery || emailSesion;
+
+    if (!emailObjetivo) {
+        return res.redirect("/login?error=Ingrese su email en login y luego presione 'Recuperar contraseña'.");
+    }
+
+    req.session.lastLoginEmail = emailObjetivo;
+
+    try {
+        const resultado = await solicitarRecuperacionPorEmailPrincipal(emailObjetivo);
+
+        return res.render("seguridad/recuperar-password", {
+            error: resultado.ok ? null : resultado.mensaje,
+            success: resultado.ok ? resultado.mensaje : null,
+            emailPrefill: emailObjetivo,
+            resetUrl: resultado.resetUrl,
+            mostrarFormulario: false
+        });
+    } catch (error) {
+        console.error("Error al solicitar recuperación (GET):", error);
+        return res.render("seguridad/recuperar-password", {
+            error: "No se pudo procesar la solicitud. Intente de nuevo.",
+            success: null,
+            emailPrefill: emailObjetivo,
+            resetUrl: null,
+            mostrarFormulario: false
+        });
+    }
 };
 
 export const solicitarRecuperarPassword = async (req: any, res: Response): Promise<void> => {
     const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
 
-    if (!email) {
-        return res.render("seguridad/recuperar-password", {
-            error: "Debe ingresar un email",
-            success: null,
-            resetLink: null,
-            emailPrefill: ""
-        });
-    }
-
     try {
-        await asegurarTablaRecuperacion();
-        const usuario = await repoUsuario.buscarPorBackupEmail(email);
-        let resetLink: string | null = null;
-
-        if (!usuario) {
-            return res.render("seguridad/recuperar-password", {
-                error: "El mail no coincide con ningún mail de backup registrado.",
-                success: null,
-                resetLink: null,
-                emailPrefill: email
-            });
-        }
-
-        const pool = getPool();
-        const token = crypto.randomBytes(32).toString("hex");
-        resetLink = construirResetUrl(token);
-        const emailDestino = (usuario.getBackupEmail() || "").toLowerCase();
-
-        await pool.query(
-            `DELETE FROM password_resets WHERE usuario_id = ? AND used_at IS NULL`,
-            [usuario.getId()]
-        );
-
-        await pool.query(
-            `INSERT INTO password_resets (usuario_id, email, token, expires_at)
-             VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))`,
-            [usuario.getId(), emailDestino, token]
-        );
-
-        const enviado = await enviarCorreoRecuperacion(emailDestino, token);
-
-        if (!enviado) {
-            return res.render("seguridad/recuperar-password", {
-                error: null,
-                success: null,
-                resetLink,
-                emailPrefill: email
-            });
-        }
-
+        const resultado = await solicitarRecuperacionPorEmailPrincipal(email);
         return res.render("seguridad/recuperar-password", {
-            error: null,
-            success: `Se envió el correo de recuperación a ${emailDestino}.`,
-            resetLink: null,
-            emailPrefill: email
+            error: resultado.ok ? null : resultado.mensaje,
+            success: resultado.ok ? resultado.mensaje : null,
+            emailPrefill: email,
+            resetUrl: resultado.resetUrl,
+            mostrarFormulario: true
         });
     } catch (error) {
         console.error("Error al solicitar recuperación:", error);
         return res.render("seguridad/recuperar-password", {
             error: "No se pudo procesar la solicitud. Intente de nuevo.",
             success: null,
-            resetLink: null,
-            emailPrefill: email
+            emailPrefill: email,
+            resetUrl: null,
+            mostrarFormulario: true
         });
     }
 };

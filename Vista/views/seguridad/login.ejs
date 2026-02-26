@@ -12,7 +12,7 @@
 
 <form action="/login" method="POST">
   <div>
-    <input type="email" name="email" placeholder="Email" required />
+    <input id="login-email" type="email" name="email" placeholder="Email" required />
   </div>
 
   <div>
@@ -23,6 +23,27 @@
 </form>
 
 <div style="margin-top: 12px;">
-  <a href="/forgot-password">Recuperar contraseña</a>
+  <a id="forgot-password-link" href="/forgot-password">Recuperar contraseña</a>
 </div>
+
+<script>
+  (function () {
+    var emailInput = document.getElementById("login-email");
+    var forgotLink = document.getElementById("forgot-password-link");
+
+    if (!emailInput || !forgotLink) {
+      return;
+    }
+
+    var updateForgotHref = function () {
+      var emailValue = (emailInput.value || "").trim();
+      forgotLink.href = emailValue
+        ? "/forgot-password?email=" + encodeURIComponent(emailValue)
+        : "/forgot-password";
+    };
+
+    emailInput.addEventListener("input", updateForgotHref);
+    updateForgotHref();
+  })();
+</script>
   

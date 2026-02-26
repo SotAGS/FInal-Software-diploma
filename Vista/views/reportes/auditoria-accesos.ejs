@@ -90,6 +90,9 @@
   if (datos.length > 0) {
     // Gráfico 1: Tendencia de Accesos
     const ctx1 = document.getElementById('tendenciaChart').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const chartTextColor = isDark ? '#e5e7eb' : '#374151';
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(55, 65, 81, 0.15)';
     
     const fechas = datos.map(d => d.fecha);
     const accesos = datos.map(d => d.accesos);
@@ -135,16 +138,34 @@
         maintainAspectRatio: true,
         plugins: {
           legend: {
-            position: 'top'
+            position: 'top',
+            labels: {
+              color: chartTextColor
+            }
           },
           title: {
             display: true,
-            text: 'Tendencia de Accesos - Últimos 7 Días'
+            text: 'Tendencia de Accesos - Últimos 7 Días',
+            color: chartTextColor
           }
         },
         scales: {
           y: {
-            beginAtZero: true
+            beginAtZero: true,
+            ticks: {
+              color: chartTextColor
+            },
+            grid: {
+              color: gridColor
+            }
+          },
+          x: {
+            ticks: {
+              color: chartTextColor
+            },
+            grid: {
+              color: gridColor
+            }
           }
         }
       }
@@ -187,12 +208,27 @@
           },
           title: {
             display: true,
-            text: 'Actividad Total por Tipo'
+            text: 'Actividad Total por Tipo',
+            color: chartTextColor
           }
         },
         scales: {
           y: {
-            beginAtZero: true
+            beginAtZero: true,
+            ticks: {
+              color: chartTextColor
+            },
+            grid: {
+              color: gridColor
+            }
+          },
+          x: {
+            ticks: {
+              color: chartTextColor
+            },
+            grid: {
+              color: gridColor
+            }
           }
         }
       }

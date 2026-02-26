@@ -5,7 +5,9 @@ import {
     crearRol,
     mostrarFormularioEditarRol,
     actualizarRol,
-    eliminarRol
+    eliminarRol,
+    recuperarRol,
+    eliminarRolDefinitivo
 } from "../Controladoras/controladoraRoles";
 import { soloAdmin } from "../Middlewares/autenticacion";
 
@@ -17,5 +19,7 @@ router.post("/", soloAdmin, crearRol);
 router.get("/:id/editar", soloAdmin, mostrarFormularioEditarRol);
 router.post("/:id", soloAdmin, actualizarRol);
 router.post("/:id/eliminar", soloAdmin, eliminarRol);
+router.post("/:id/recuperar", soloAdmin, recuperarRol);
+router.post("/:id/eliminar-definitivo", soloAdmin, eliminarRolDefinitivo);
 
 export default router;

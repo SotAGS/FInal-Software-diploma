@@ -55,15 +55,3 @@ export const soloAdmin = (req: any, res: Response, next: NextFunction) => {
 
     next();
 };
-
-export function soloDueno(req: any, res: Response, next: NextFunction) {
-    if (!req.session || !req.session.usuario) {
-        return res.redirect("/login");
-    }
-
-    if (req.session.usuario.rol !== "Dueño") {
-        return res.status(403).send("Acceso denegado");
-    }
-
-    next();
-}

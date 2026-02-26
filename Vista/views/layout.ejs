@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Sistema de Gestión</title>
+  <script>
+    (function () {
+      var savedTheme = localStorage.getItem("theme");
+      var theme = savedTheme === "dark" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="layout">
@@ -13,6 +20,7 @@
     </div>
 
     <div class="header-right">
+      <button id="theme-toggle" type="button" class="theme-toggle">Modo oscuro</button>
       <% if (usuario) { %>
         <span>Usuario: <strong><%= usuario.getNombre() %></strong></span>
         <span style="margin:0 8px">|</span>
@@ -34,6 +42,28 @@
       </main>
     </div>
   </div>
+
+  <script>
+    (function () {
+      var button = document.getElementById("theme-toggle");
+      if (!button) return;
+
+      function refreshLabel() {
+        var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+        button.textContent = isDark ? "Modo claro" : "Modo oscuro";
+      }
+
+      button.addEventListener("click", function () {
+        var current = document.documentElement.getAttribute("data-theme") || "light";
+        var next = current === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("theme", next);
+        refreshLabel();
+      });
+
+      refreshLabel();
+    })();
+  </script>
 
 </body>
 </html>
