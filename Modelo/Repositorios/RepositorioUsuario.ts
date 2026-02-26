@@ -10,6 +10,7 @@ export class RepositorioUsuario {
     private static roles: Map<string, Rol> = new Map();
     private static initialized = false;
     private static backupEmailVerificado = false;
+    private static columnaPassword: "contrasena" | "password" | null = null;
     private repoRol = new RepositorioRol();
 
     constructor() {
@@ -39,6 +40,35 @@ export class RepositorioUsuario {
         }
 
         RepositorioUsuario.backupEmailVerificado = true;
+    }
+
+    private async obtenerColumnaPassword(): Promise<"contrasena" | "password"> {
+        if (RepositorioUsuario.columnaPassword) {
+            return RepositorioUsuario.columnaPassword;
+        }
+
+        const pool = getPool();
+        const [rows] = await pool.query<any[]>(
+            `SELECT COLUMN_NAME
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'usuarios'
+               AND COLUMN_NAME IN ('contrasena', 'password')`
+        );
+
+        const columnas = (rows as any[]).map(r => String(r.COLUMN_NAME || '').toLowerCase());
+
+        if (columnas.includes('password')) {
+            RepositorioUsuario.columnaPassword = 'password';
+            return 'password';
+        }
+
+        if (columnas.includes('contrasena')) {
+            RepositorioUsuario.columnaPassword = 'contrasena';
+            return 'contrasena';
+        }
+
+        throw new Error("No existe columna de contraseña en usuarios (se esperaba 'password' o 'contrasena')");
     }
 
     private static inicializarRoles() {
@@ -150,10 +180,11 @@ export class RepositorioUsuario {
     public async obtenerTodos(incluirInactivos: boolean = false): Promise<Usuario[]> {
         try {
             await this.asegurarColumnaBackupEmail();
+            const columnaPassword = await this.obtenerColumnaPassword();
             const pool = getPool();
             const rolesDisponibles = await this.obtenerMapaRoles();
             const [rows] = await pool.query(
-                `SELECT u.id, u.nombre, u.email, u.backup_email, u.contrasena, u.rol, u.activo
+                `SELECT u.id, u.nombre, u.email, u.backup_email, u.${columnaPassword} AS password_hash, u.rol, u.activo
                  FROM usuarios u 
                  ${incluirInactivos ? "" : "WHERE u.activo = TRUE"}
                  ORDER BY u.nombre`
@@ -166,7 +197,7 @@ export class RepositorioUsuario {
                     row.id,
                     row.nombre,
                     row.email,
-                    row.contrasena,
+                    row.password_hash,
                     rol,
                     Boolean(row.activo),
                     row.backup_email || null
@@ -185,10 +216,11 @@ export class RepositorioUsuario {
     public async buscarPorEmail(email: string): Promise<Usuario | undefined> {
         try {
             await this.asegurarColumnaBackupEmail();
+            const columnaPassword = await this.obtenerColumnaPassword();
             const pool = getPool();
             const rolesDisponibles = await this.obtenerMapaRoles();
             const [rows] = await pool.query(
-                `SELECT u.id, u.nombre, u.email, u.backup_email, u.contrasena, u.rol 
+                `SELECT u.id, u.nombre, u.email, u.backup_email, u.${columnaPassword} AS password_hash, u.rol 
                  FROM usuarios u 
                  WHERE LOWER(TRIM(u.email)) = LOWER(TRIM(?)) AND u.activo = TRUE`,
                 [email]
@@ -201,7 +233,7 @@ export class RepositorioUsuario {
                 row.id,
                 row.nombre,
                 row.email,
-                row.contrasena,
+                row.password_hash,
                 rolesDisponibles.get(row.rol) || RepositorioUsuario.roles.get("EMPLEADO")!,
                 true,
                 row.backup_email || null
@@ -215,10 +247,11 @@ export class RepositorioUsuario {
     public async buscarPorBackupEmail(backupEmail: string): Promise<Usuario | undefined> {
         try {
             await this.asegurarColumnaBackupEmail();
+            const columnaPassword = await this.obtenerColumnaPassword();
             const pool = getPool();
             const rolesDisponibles = await this.obtenerMapaRoles();
             const [rows] = await pool.query(
-                `SELECT u.id, u.nombre, u.email, u.backup_email, u.contrasena, u.rol, u.activo
+                `SELECT u.id, u.nombre, u.email, u.backup_email, u.${columnaPassword} AS password_hash, u.rol, u.activo
                  FROM usuarios u
                  WHERE LOWER(TRIM(u.backup_email)) = LOWER(TRIM(?)) AND u.activo = TRUE`,
                 [backupEmail]
@@ -231,7 +264,7 @@ export class RepositorioUsuario {
                 row.id,
                 row.nombre,
                 row.email,
-                row.contrasena,
+                row.password_hash,
                 rolesDisponibles.get(row.rol) || RepositorioUsuario.roles.get("EMPLEADO")!,
                 Boolean(row.activo),
                 row.backup_email || null
@@ -249,10 +282,11 @@ export class RepositorioUsuario {
     public async buscarPorId(id: number, incluirInactivos: boolean = false): Promise<Usuario | undefined> {
         try {
             await this.asegurarColumnaBackupEmail();
+            const columnaPassword = await this.obtenerColumnaPassword();
             const pool = getPool();
             const rolesDisponibles = await this.obtenerMapaRoles();
             const [rows] = await pool.query(
-                `SELECT u.id, u.nombre, u.email, u.backup_email, u.contrasena, u.rol, u.activo
+                `SELECT u.id, u.nombre, u.email, u.backup_email, u.${columnaPassword} AS password_hash, u.rol, u.activo
                  FROM usuarios u
                  WHERE u.id = ? ${incluirInactivos ? "" : "AND u.activo = TRUE"}`,
                 [id]
@@ -265,7 +299,7 @@ export class RepositorioUsuario {
                 row.id,
                 row.nombre,
                 row.email,
-                row.contrasena,
+                row.password_hash,
                 rolesDisponibles.get(row.rol) || RepositorioUsuario.roles.get("EMPLEADO")!,
                 Boolean(row.activo),
                 row.backup_email || null
@@ -295,9 +329,10 @@ export class RepositorioUsuario {
 
     public async crear(usuario: Usuario): Promise<boolean> {
         await this.asegurarColumnaBackupEmail();
+        const columnaPassword = await this.obtenerColumnaPassword();
         const pool = getPool();
         await pool.query(
-            `INSERT INTO usuarios (nombre, email, backup_email, contrasena, rol, activo, fecha_creacion) 
+            `INSERT INTO usuarios (nombre, email, backup_email, ${columnaPassword}, rol, activo, fecha_creacion) 
              VALUES (?, ?, ?, ?, ?, TRUE, NOW())`,
             [usuario.getNombre(), usuario.getEmail(), usuario.getBackupEmail(), usuario.getPassword(), usuario.getRol().nombre]
         );
@@ -311,10 +346,11 @@ export class RepositorioUsuario {
     public async actualizar(usuario: Usuario): Promise<boolean> {
         try {
             await this.asegurarColumnaBackupEmail();
+            const columnaPassword = await this.obtenerColumnaPassword();
             const pool = getPool();
             await pool.query(
                 `UPDATE usuarios 
-                 SET nombre = ?, email = ?, backup_email = ?, contrasena = ?, rol = ? 
+                 SET nombre = ?, email = ?, backup_email = ?, ${columnaPassword} = ?, rol = ? 
                  WHERE id = ?`,
                 [usuario.getNombre(), usuario.getEmail(), usuario.getBackupEmail(), usuario.getPassword(), usuario.getRol().nombre, usuario.getId()]
             );
