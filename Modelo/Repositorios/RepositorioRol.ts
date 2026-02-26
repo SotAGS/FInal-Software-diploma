@@ -375,9 +375,7 @@ export class RepositorioRol {
 
         await executor.query(`
             INSERT IGNORE INTO roles (nombre, descripcion, activo) VALUES
-            ('ADMIN', 'Administrador del sistema', TRUE),
-            ('GERENTE', 'Gerente de compras', TRUE),
-            ('EMPLEADO', 'Usuario estándar', TRUE)
+            ('ADMIN', 'Administrador del sistema', TRUE)
         `);
 
         await executor.query(`
@@ -387,7 +385,7 @@ export class RepositorioRol {
 
     private async asegurarPermisosBase(executor: { query: (sql: string, values?: any[]) => Promise<any> }): Promise<void> {
         const [rolesRows] = await executor.query(
-            `SELECT id, nombre FROM roles WHERE UPPER(nombre) IN ('ADMIN', 'GERENTE', 'EMPLEADO')`
+            `SELECT id, nombre FROM roles WHERE UPPER(nombre) IN ('ADMIN')`
         );
 
         const catalogoPorCodigo = new Map(

@@ -4,11 +4,9 @@
 
 USE gestion_empresarial;
 
--- Insertar roles iniciales
+-- Insertar rol inicial
 INSERT IGNORE INTO roles (id, nombre, descripcion) VALUES 
-(1, 'Administrador', 'Administrador del sistema'),
-(2, 'Gerente', 'Gerente de compras'),
-(3, 'Usuario', 'Usuario estándar');
+(1, 'ADMIN', 'Administrador del sistema');
 
 -- Insertar usuario administrador de prueba (contraseña: admin123)
 INSERT IGNORE INTO usuarios (id, nombre, email, password, rol, activo, fecha_creacion) VALUES 

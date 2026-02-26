@@ -14,9 +14,7 @@ CREATE TABLE IF NOT EXISTS rol_permisos (
 );
 
 INSERT IGNORE INTO roles (nombre, descripcion) VALUES
-('ADMIN', 'Administrador del sistema'),
-('GERENTE', 'Gerente de compras'),
-('EMPLEADO', 'Usuario estándar');
+('ADMIN', 'Administrador del sistema');
 
 INSERT IGNORE INTO rol_permisos (rol_id, codigo_permiso, descripcion_permiso)
 SELECT r.id, t.codigo_permiso, t.descripcion_permiso
