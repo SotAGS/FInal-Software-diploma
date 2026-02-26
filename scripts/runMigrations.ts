@@ -49,11 +49,13 @@ async function runMigrations() {
 
                 console.log(`⏳ Ejecutando ${file}...`);
 
-                // Dividir por ; y ejecutar cada declaración
-                const statements = sql
+                // Eliminar comentarios de una línea y dividir por ;
+                const sqlSinComentarios = sql.replace(/^\s*--.*$/gm, '');
+
+                const statements = sqlSinComentarios
                     .split(';')
                     .map(s => s.trim())
-                    .filter(s => s.length > 0 && !s.startsWith('--'));
+                    .filter(s => s.length > 0);
 
                 for (const statement of statements) {
                     const statementNormalizado = statement.replace(/\s+/g, ' ').trim();
