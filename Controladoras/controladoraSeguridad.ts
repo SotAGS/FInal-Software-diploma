@@ -97,6 +97,9 @@ const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Pr
         host,
         port,
         secure,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         auth: {
             user,
             pass
@@ -104,7 +107,8 @@ const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Pr
     });
 
     try {
-        await transporter.sendMail({
+        await Promise.race([
+            transporter.sendMail({
             from,
             to: emailDestino,
             subject: "Recuperación de contraseña",
@@ -114,7 +118,9 @@ const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Pr
                 <p><a href="${resetUrl}">Haz clic aquí para restablecerla</a></p>
                 <p>Este enlace vence en 1 hora.</p>
             `
-        });
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("SMTP timeout")), 15000))
+        ]);
 
         return true;
     } catch (error) {
@@ -190,9 +196,9 @@ const solicitarRecuperacionPorEmailPrincipal = async (emailPrincipal: string): P
 
     if (!enviado) {
         return {
-            ok: false,
-            mensaje: "No se pudo enviar el correo de recuperación. Intente nuevamente.",
-            resetUrl: null
+            ok: true,
+            mensaje: "No se pudo enviar el correo de recuperación. Use el enlace generado debajo para restablecer su contraseña.",
+            resetUrl
         };
     }
 

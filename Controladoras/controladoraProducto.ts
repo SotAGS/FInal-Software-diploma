@@ -89,14 +89,39 @@ export const crearProducto = async (req: any, res: Response): Promise<void> => {
         });
     }
 
-    await repoProducto.crear(
-        nombre,
-        Number(precio),
-        Number(stock),
-        proveedorIdNumero
-    );
+    const existeDuplicado = await repoProducto.existePorNombreYProveedor(nombre, proveedorIdNumero);
+    if (existeDuplicado) {
+        const proveedores = await repoProveedor.obtenerTodos();
+        return res.status(400).render("Inventario/crear", {
+            proveedores,
+            error: "Ya existe un producto activo con ese nombre para ese proveedor.",
+            nombre: nombre || "",
+            precio: precio || "",
+            stock: stock || "",
+            proveedorId: proveedorId || ""
+        });
+    }
 
-    res.redirect("/inventario/listado?success=Producto creado correctamente");
+    try {
+        await repoProducto.crear(
+            nombre,
+            Number(precio),
+            Number(stock),
+            proveedorIdNumero
+        );
+
+        res.redirect("/inventario/listado?success=Producto creado correctamente");
+    } catch (error) {
+        const proveedores = await repoProveedor.obtenerTodos();
+        return res.status(400).render("Inventario/crear", {
+            proveedores,
+            error: (error as any)?.message || "No se pudo crear el producto.",
+            nombre: nombre || "",
+            precio: precio || "",
+            stock: stock || "",
+            proveedorId: proveedorId || ""
+        });
+    }
 };
 
 /* ===========================

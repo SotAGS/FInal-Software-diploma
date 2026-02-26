@@ -24,15 +24,8 @@ const slugSeguro = (valor: string): string => {
     .replace(/^-|-$/g, "");
 };
 
-const obtenerCarpetaEscritorio = (): string => {
-  const homeDir = os.homedir();
-  const candidatos = [
-    path.join(homeDir, "Desktop"),
-    path.join(homeDir, "Escritorio")
-  ];
-
-  const escritorio = candidatos.find(dir => fs.existsSync(dir)) || candidatos[0];
-  const carpetaReportes = path.join(escritorio, "ReportesPDF");
+const obtenerCarpetaTemporalReportes = (): string => {
+  const carpetaReportes = path.join(os.tmpdir(), "ReportesPDF");
   fs.mkdirSync(carpetaReportes, { recursive: true });
 
   return carpetaReportes;
@@ -58,12 +51,12 @@ export const generarReportePdf = async (
   queryParams: Record<string, string | undefined> = {},
   baseUrlOverride?: string
 ): Promise<{ filePath: string; fileName: string; outputDir: string }> => {
-  const outputDir = obtenerCarpetaEscritorio();
+  const outputDir = obtenerCarpetaTemporalReportes();
   const timestamp = formatoTimestamp(new Date());
   const fileName = `${slugSeguro(reporte)}-${timestamp}.pdf`;
   const filePath = path.join(outputDir, fileName);
 
-  const baseUrl = baseUrlOverride || process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+  const baseUrl = process.env.APP_BASE_URL || baseUrlOverride || `http://localhost:${process.env.PORT || 3000}`;
   const url = new URL(obtenerRutaReportePorKey(reporte), baseUrl);
 
   Object.entries(queryParams).forEach(([key, value]) => {
@@ -87,7 +80,7 @@ export const generarReportePdf = async (
     }
 
     await page.goto(url.toString(), {
-      waitUntil: "networkidle0",
+      waitUntil: "domcontentloaded",
       timeout: 90000
     });
 

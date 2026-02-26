@@ -214,11 +214,18 @@ export const descargarReportePdf = async (req: Request, res: Response): Promise<
         const forwardedProto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
         const protocolo = forwardedProto || req.protocol || "http";
         const host = req.get("host") || "localhost:3000";
-        const baseUrl = `${protocolo}://${host}`;
+        const baseUrl = process.env.APP_BASE_URL || `${protocolo}://${host}`;
 
         const { filePath, fileName } = await generarReportePdf(reporte, cookieHeader, queryParams, baseUrl);
 
-        res.download(filePath, fileName);
+        res.download(filePath, fileName, () => {
+            setTimeout(() => {
+                try {
+                    require("fs").unlinkSync(filePath);
+                } catch {
+                }
+            }, 0);
+        });
     } catch (error) {
         console.error("Error generando PDF de reporte:", error);
         res.status(500).send("No se pudo generar el PDF del reporte");

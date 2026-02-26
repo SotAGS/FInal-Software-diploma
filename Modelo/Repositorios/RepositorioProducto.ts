@@ -67,9 +67,49 @@ export class RepositorioProducto {
     async crear(nombre: string, precio: number, stock: number, proveedorId?: number): Promise<Producto> {
         await this.asegurarColumnaProveedorId();
         const pool = getPool();
+
+        const existeDuplicado = await this.existePorNombreYProveedor(nombre, proveedorId || null);
+        if (existeDuplicado) {
+            throw new Error("Ya existe un producto activo con ese nombre para el proveedor seleccionado");
+        }
+
         const [result]: any = await pool.execute("INSERT INTO productos (nombre, precio, stock, proveedor_id) VALUES (?, ?, ?, ?)", [nombre, precio, stock, proveedorId || null]);
         const insertId = result.insertId;
         return new Producto(insertId, nombre, precio, stock, true, proveedorId);
+    }
+
+    async existePorNombreYProveedor(nombre: string, proveedorId: number | null, excluirId?: number): Promise<boolean> {
+        await this.asegurarColumnaProveedorId();
+        const pool = getPool();
+        const nombreNormalizado = nombre.trim().toLowerCase();
+
+        const condiciones = [
+            "activo = 1",
+            "LOWER(TRIM(nombre)) = ?"
+        ];
+
+        const valores: any[] = [nombreNormalizado];
+
+        if (proveedorId === null) {
+            condiciones.push("proveedor_id IS NULL");
+        } else {
+            condiciones.push("proveedor_id = ?");
+            valores.push(proveedorId);
+        }
+
+        if (typeof excluirId === "number") {
+            condiciones.push("id <> ?");
+            valores.push(excluirId);
+        }
+
+        const [rows] = await pool.query<any[]>(
+            `SELECT COUNT(*) AS total
+             FROM productos
+             WHERE ${condiciones.join(" AND ")}`,
+            valores
+        );
+
+        return Number((rows as any[])[0]?.total || 0) > 0;
     }
 
     async eliminar(id: number): Promise<void> {
