@@ -112,48 +112,58 @@ const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Pr
         console.warn("[RECUPERAR PASSWORD] No se pudo resolver IPv4 de SMTP, se usa host original:", host);
     }
 
-    const transporter = nodemailer.createTransport({
-        host: hostConexion,
-        port,
-        secure,
-        requireTLS: !secure,
-        tls: {
-            minVersion: "TLSv1.2",
-            servername: tlsServername
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-        auth: {
-            user,
-            pass
+    const puertosIntento = Array.from(new Set([port, port === 587 ? 465 : 587]));
+    let ultimoError: any = null;
+
+    for (const puertoActual of puertosIntento) {
+        const secureActual = puertoActual === 465;
+
+        const transporter = nodemailer.createTransport({
+            host: hostConexion,
+            port: puertoActual,
+            secure: secureActual,
+            requireTLS: !secureActual,
+            tls: {
+                minVersion: "TLSv1.2",
+                servername: tlsServername
+            },
+            connectionTimeout: 30000,
+            greetingTimeout: 30000,
+            socketTimeout: 30000,
+            auth: {
+                user,
+                pass
+            }
+        });
+
+        try {
+            await transporter.verify();
+
+            await Promise.race([
+                transporter.sendMail({
+                from,
+                to: emailDestino,
+                subject: "Recuperación de contraseña",
+                text: `Recibimos una solicitud para restablecer tu contraseña. Usa este enlace: ${resetUrl}. El enlace vence en 1 hora.`,
+                html: `
+                    <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+                    <p><a href="${resetUrl}">Haz clic aquí para restablecerla</a></p>
+                    <p>Este enlace vence en 1 hora.</p>
+                `
+                }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("SMTP timeout")), 30000))
+            ]);
+
+            return true;
+        } catch (error) {
+            ultimoError = error;
+            console.error(`[RECUPERAR PASSWORD] Error SMTP en puerto ${puertoActual}:`, error);
         }
-    });
-
-    try {
-        await transporter.verify();
-
-        await Promise.race([
-            transporter.sendMail({
-            from,
-            to: emailDestino,
-            subject: "Recuperación de contraseña",
-            text: `Recibimos una solicitud para restablecer tu contraseña. Usa este enlace: ${resetUrl}. El enlace vence en 1 hora.`,
-            html: `
-                <p>Recibimos una solicitud para restablecer tu contraseña.</p>
-                <p><a href="${resetUrl}">Haz clic aquí para restablecerla</a></p>
-                <p>Este enlace vence en 1 hora.</p>
-            `
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("SMTP timeout")), 15000))
-        ]);
-
-        return true;
-    } catch (error) {
-        console.error("[RECUPERAR PASSWORD] Error enviando correo SMTP:", error);
-        console.log("[RECUPERAR PASSWORD] Link de recuperación:", resetUrl);
-        return false;
     }
+
+    console.error("[RECUPERAR PASSWORD] Error enviando correo SMTP:", ultimoError);
+    console.log("[RECUPERAR PASSWORD] Link de recuperación:", resetUrl);
+    return false;
 };
 
 type ResultadoRecuperacionPassword = {
