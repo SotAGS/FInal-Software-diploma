@@ -1,13 +1,13 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import puppeteer from "puppeteer";
 
 const puppeteerCacheDir = path.join(process.cwd(), ".cache", "puppeteer");
 
-if (!process.env.PUPPETEER_CACHE_DIR) {
-  process.env.PUPPETEER_CACHE_DIR = puppeteerCacheDir;
-}
+const obtenerPuppeteer = async () => {
+  process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || puppeteerCacheDir;
+  return import("puppeteer");
+};
 
 export type ReportePdfKey =
   | "desempenio-compras"
@@ -72,6 +72,8 @@ export const generarReportePdf = async (
   });
 
   url.searchParams.set("pdf", "1");
+
+  const puppeteer = await obtenerPuppeteer();
 
   const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath();
 

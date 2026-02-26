@@ -141,15 +141,18 @@ export class ServicioAuditoria {
         [idUsuario]
       ) as any;
 
+      const usuarioIdRegistro = usuario ? idUsuario : null;
+      const emailRegistro = usuario?.email || null;
+
       if (config.tieneEmail) {
         await pool.query(
           `INSERT INTO login_logout (usuario_id, email, ${config.campoTipo}) VALUES (?, ?, 'LOGOUT')`,
-          [idUsuario, usuario?.email || null]
+          [usuarioIdRegistro, emailRegistro]
         );
       } else {
         await pool.query(
           `INSERT INTO login_logout (usuario_id, ${config.campoTipo}) VALUES (?, 'LOGOUT')`,
-          [idUsuario]
+          [usuarioIdRegistro]
         );
       }
       console.log(`✅ [LOGOUT] Usuario ${idUsuario}`);
