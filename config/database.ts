@@ -10,15 +10,35 @@ const obtenerNumeroPuerto = (valor?: string): number => {
     return Number.isFinite(numero) && numero > 0 ? numero : 3306;
 };
 
+const esDatabaseUrlUtilizable = (valor: string): boolean => {
+    const url = valor.trim();
+
+    if (!url) {
+        return false;
+    }
+
+    if (url.includes('${{') || url.includes('}}')) {
+        return false;
+    }
+
+    return /^mysql(\+mysql)?:\/\//i.test(url);
+};
+
 export async function initializePool(): Promise<Pool> {
     if (pool) return pool;
 
     const databaseUrl = process.env.DATABASE_URL || process.env.MYSQL_URL || process.env.MYSQL_PUBLIC_URL;
 
-    if (databaseUrl) {
-        pool = mysql.createPool(databaseUrl);
-        console.log('✓ Pool MySQL conectado por URL');
-        return pool;
+    if (databaseUrl && esDatabaseUrlUtilizable(databaseUrl)) {
+        try {
+            pool = mysql.createPool(databaseUrl.trim());
+            console.log('✓ Pool MySQL conectado por URL');
+            return pool;
+        } catch (error) {
+            console.warn('⚠ DATABASE_URL inválida, se intentará configuración DB_*:', (error as any)?.message || error);
+        }
+    } else if (databaseUrl) {
+        console.warn('⚠ DATABASE_URL no utilizable (placeholder o formato inválido), se intentará configuración DB_*');
     }
 
     const host = process.env.DB_HOST || process.env.MYSQLHOST || 'localhost';
