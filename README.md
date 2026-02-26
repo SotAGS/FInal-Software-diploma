@@ -2,7 +2,7 @@
 
 Un sistema completo de gestión empresarial con auditoría integrada, reportes inteligentes y gestión de usuarios.
 
-## 🎯 Características
+## Características
 
 - ✅ **Autenticación de Usuarios:** Sistema de login con auditoría de accesos
 - ✅ **Gestión de Usuarios CRUD:** Crear, editar, eliminar usuarios con roles y permisos
@@ -17,7 +17,7 @@ Un sistema completo de gestión empresarial con auditoría integrada, reportes i
 - ✅ **Repository Pattern:** Acceso a datos normalizado
 - ✅ **Permissions System:** Composite pattern para permisos granulares
 
-## 🛠 Stack Tecnológico
+## Stack Tecnológico
 
 - **Backend:** Node.js, Express.js, TypeScript
 - **Base de Datos:** MySQL 8 con mysql2 (async/await)
@@ -26,13 +26,13 @@ Un sistema completo de gestión empresarial con auditoría integrada, reportes i
 - **Testing:** Jest, ts-jest
 - **Patrones:** Design Patterns (State, Repository, Composite, Singleton)
 
-## 📋 Requisitos
+## Requisitos
 
 - Node.js v14+
 - MySQL 8+
 - npm o yarn
 
-## 🚀 Instalación y Ejecución
+## Instalación y Ejecución
 
 ### 1. Clonar el repositorio
 ```bash
@@ -79,7 +79,7 @@ El servidor estará disponible en: `http://localhost:3000`
 - Email: `admin@empresa.com`
 - Password: `admin123`
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 final-software-diploma/
@@ -107,7 +107,7 @@ final-software-diploma/
 └── tsconfig.json
 ```
 
-## 🧪 Pruebas
+## Pruebas
 
 ### Ejecutar todas las pruebas
 ```bash
@@ -129,7 +129,7 @@ npm run test:coverage
 - **Caja Blanca:** Login con auditoría integrada
 - **Caja Negra:** Comportamiento externo del login
 
-## 📊 Reportes Disponibles
+## Reportes Disponibles
 
 ### 1. Desempeño de Compras
 - **Endpoint:** `GET /Reportes/desempenio-compras`
@@ -146,7 +146,7 @@ npm run test:coverage
 - **API JSON:** `GET /Reportes/api/auditoria-accesos`
 - **Datos:** Logins, logouts, intentos fallidos (7 días)
 
-## 🔒 Seguridad
+## Seguridad
 
 ### Auditoría Persistente
 - Todos los cambios se registran en la BD
@@ -163,7 +163,7 @@ npm run test:coverage
 - GERENTE: Compras, inventario, reportes
 - EMPLEADO: Consultas básicas
 
-## 🗄 Base de Datos
+## Base de Datos
 
 ### Tablas Principales
 - `usuarios` (id, nombre, email, password, rol, activo)
@@ -172,7 +172,7 @@ npm run test:coverage
 - `auditoria` (id, usuario_id, entidad, id_entidad, accion, valor_anterior, valor_nuevo)
 - `login_logout` (id, usuario_id, tipo, email, motivo, fecha_hora)
 
-## 🚂 Migraciones
+## Migraciones
 
 Ejecutar manualmente:
 ```bash
@@ -184,7 +184,7 @@ Las migraciones en `/migrations/`:
 2. `002_create_tables.sql` - Todas las tablas
 3. `003_insert_seed_data.sql` - Datos de prueba
 
-## 🔧 Compilación
+## Compilación
 
 ### Compilar TypeScript a JavaScript
 ```bash
@@ -198,7 +198,7 @@ Output en carpeta `dist/`
 npm start
 ```
 
-## 📱 API Endpoints
+## API Endpoints
 
 ### Autenticación
 - `POST /login` - Iniciar sesión
@@ -227,13 +227,13 @@ npm start
 - `GET /Reportes/auditoria-accesos` - Reporte accesos
 - `GET /Reportes/api/*` - Versiones JSON
 
-## 📚 Documentación Adicional
+## Documentación Adicional
 
 - [INSTRUCTIVOS_USUARIO.md](./INSTRUCTIVOS_USUARIO.md) - Guía de uso para usuarios finales
 - [tsconfig.json](./tsconfig.json) - Configuración TypeScript
 - [jest.config.js](./jest.config.js) - Configuración de pruebas
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Error de conexión a BD
 ```bash
@@ -252,13 +252,13 @@ npm run build
 # Cambiar PORT en .env a otro valor (ej: 3001)
 ```
 
-## 📝 Licencia
+## Licencia
 
 ISC
 
-## 👤 Autor
+## Autor
 
-Alejandro - Final Software Project
+Alejandro Galli - Final Software Project
 
 ---
 
