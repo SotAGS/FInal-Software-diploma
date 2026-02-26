@@ -98,15 +98,28 @@ const enviarCorreoRecuperacion = async (emailDestino: string, token: string): Pr
         return false;
     }
 
-    dns.setDefaultResultOrder("ipv4first");
+    let hostConexion = host;
+    let tlsServername = host;
+
+    try {
+        const direccionesIpv4 = await dns.promises.resolve4(host);
+        if (direccionesIpv4 && direccionesIpv4.length > 0) {
+            hostConexion = direccionesIpv4[0];
+            tlsServername = host;
+            console.log(`[RECUPERAR PASSWORD] SMTP IPv4 seleccionada: ${hostConexion}`);
+        }
+    } catch (error) {
+        console.warn("[RECUPERAR PASSWORD] No se pudo resolver IPv4 de SMTP, se usa host original:", host);
+    }
 
     const transporter = nodemailer.createTransport({
-        host,
+        host: hostConexion,
         port,
         secure,
         requireTLS: !secure,
         tls: {
-            minVersion: "TLSv1.2"
+            minVersion: "TLSv1.2",
+            servername: tlsServername
         },
         connectionTimeout: 10000,
         greetingTimeout: 10000,
