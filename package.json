@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "nodemon --exec ts-node app.ts",
+    "postinstall": "node scripts/installPuppeteerChrome.js",
     "build": "tsc",
     "start": "node dist/app.js",
     "migrate": "ts-node scripts/runMigrations.ts",

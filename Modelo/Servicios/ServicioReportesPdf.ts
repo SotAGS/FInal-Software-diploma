@@ -3,6 +3,12 @@ import os from "os";
 import path from "path";
 import puppeteer from "puppeteer";
 
+const puppeteerCacheDir = path.join(process.cwd(), ".cache", "puppeteer");
+
+if (!process.env.PUPPETEER_CACHE_DIR) {
+  process.env.PUPPETEER_CACHE_DIR = puppeteerCacheDir;
+}
+
 export type ReportePdfKey =
   | "desempenio-compras"
   | "rotacion-inventario"
@@ -67,7 +73,10 @@ export const generarReportePdf = async (
 
   url.searchParams.set("pdf", "1");
 
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath();
+
   const browser = await puppeteer.launch({
+    executablePath,
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
