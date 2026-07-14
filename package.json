@@ -11,6 +11,11 @@
     "start": "node dist/app.js",
     "migrate": "ts-node scripts/runMigrations.ts",
     "migrate:prod": "node dist/scripts/runMigrations.js",
+    "backup:create": "ts-node scripts/backupDatabase.ts create",
+    "backup:clear": "ts-node scripts/backupDatabase.ts clear-data",
+    "backup:restore": "ts-node scripts/backupDatabase.ts restore",
+    "smoke:exam": "ts-node scripts/smokeExamFlow.ts",
+    "check:counts": "ts-node scripts/checkCoreCounts.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

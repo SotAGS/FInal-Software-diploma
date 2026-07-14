@@ -25,3 +25,6 @@ yarn-error.log*
 *.swp
 *.swo
 *.docx
+
+# Generated backups
+backups/*.sql

@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { mostrarVentas } from "../Controladoras/controladoraVentas";
+import {
+    mostrarVentas,
+    agregarAlCarritoVenta,
+    quitarDelCarritoVenta,
+    confirmarVenta
+} from "../Controladoras/controladoraVentas";
 
 const router = Router();
 
@@ -11,5 +16,9 @@ router.get("/", (req: any, res, next) => {
 
     next();
 }, mostrarVentas);
+
+router.post("/cart/add", agregarAlCarritoVenta);
+router.post("/cart/remove", quitarDelCarritoVenta);
+router.post("/confirmar", confirmarVenta);
 
 export default router;

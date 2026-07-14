@@ -113,6 +113,16 @@
   - Interpretación de datos
   - Solución de problemas
 
+### 8. Ventas y Recuperación de Datos
+- ✅ **Ventas a clientes:**
+  - Carrito de ventas con validación de stock
+  - Confirmación de venta con descuento automático de inventario
+  - Historial de ventas persistente (`ventas`, `ventas_items`)
+- ✅ **Backups y restauración:**
+  - Script de backup completo de BD (`npm run backup:create`)
+  - Script para borrar datos del sistema (`npm run backup:clear`)
+  - Restauración desde backup (`npm run backup:restore`)
+
 ## 📊 Métricas del Proyecto
 
 | Elemento | Cantidad | Estado |
@@ -220,7 +230,7 @@ npm test
 ## ⚠️ Estado de Potenciales Mejoras Futuras
 
 - [ ] Agregar más reportes (análisis de ventas, etc.)
-- [ ] Sistema de backups automáticos
+- [x] Sistema de backups automáticos/manuales con restauración
 - [ ] Exportar reportes a PDF/Excel
 - [ ] Dashboard interactivo
 - [ ] Notificaciones de alertas

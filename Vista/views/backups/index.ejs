@@ -1,0 +1,108 @@
+<h1>Backups del Sistema</h1>
+
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert" style="margin-bottom: 12px;"><%= success %></div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div style="margin-bottom: 12px; padding: 10px; border: 1px solid #ef9a9a; background: #ffebee; color: #b71c1c; border-radius: 6px;">
+    <%= error %>
+  </div>
+<% } %>
+
+<div class="backups-grid">
+  <section class="backups-card">
+    <h3>1. Crear backup</h3>
+    <p>Genera un archivo .sql en la carpeta backups.</p>
+    <form method="POST" action="/Backups/crear" class="stacked-form">
+      <label for="nombreBackup">Nombre (opcional)</label>
+      <input id="nombreBackup" name="nombre" type="text" maxlength="60" placeholder="pre-examen" />
+      <button class="btn-success" type="submit">Crear backup</button>
+    </form>
+  </section>
+
+  <section class="backups-card">
+    <h3>2. Borrar datos</h3>
+    <p>Simula perdida de datos para la demo.</p>
+    <form method="POST" action="/Backups/limpiar" onsubmit="return confirm('Se borraran los datos del sistema. ¿Continuar?');">
+      <button class="btn-danger" type="submit">Borrar datos del sistema</button>
+    </form>
+  </section>
+
+  <section class="backups-card">
+    <h3>3. Restaurar</h3>
+    <p>Restaura desde el ultimo backup o uno puntual.</p>
+
+    <form method="POST" action="/Backups/restaurar-ultimo" onsubmit="return confirm('Se restaurara el ultimo backup. ¿Continuar?');" style="margin-bottom: 10px;">
+      <button class="btn-success" type="submit">Restaurar ultimo backup</button>
+    </form>
+
+    <form method="POST" action="/Backups/restaurar" onsubmit="return confirm('Se restaurara el backup seleccionado. ¿Continuar?');" class="stacked-form">
+      <label for="archivoBackup">Archivo backup</label>
+      <select id="archivoBackup" name="archivo" required>
+        <option value="">Seleccione un backup</option>
+        <% backups.forEach(function(b){ %>
+          <option value="<%= b.nombre %>"><%= b.nombre %></option>
+        <% }) %>
+      </select>
+      <button class="btn-success" type="submit">Restaurar seleccionado</button>
+    </form>
+  </section>
+</div>
+
+<h3 style="margin-top: 18px;">Backups disponibles</h3>
+<table>
+  <tr>
+    <th>Archivo</th>
+    <th>Fecha</th>
+    <th>Tamaño (KB)</th>
+  </tr>
+  <% if (!backups || !backups.length) { %>
+    <tr><td colspan="3">No hay backups en la carpeta.</td></tr>
+  <% } else { %>
+    <% backups.forEach(function(b){ %>
+      <tr>
+        <td><%= b.nombre %></td>
+        <td><%= new Date(b.fechaModificacion).toLocaleString('es-AR') %></td>
+        <td><%= (Number(b.tamanioBytes || 0) / 1024).toFixed(2) %></td>
+      </tr>
+    <% }) %>
+  <% } %>
+</table>
+
+<style>
+  .backups-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .backups-card {
+    border: 1px solid #224;
+    border-radius: 10px;
+    padding: 14px;
+    background: rgba(10, 18, 38, 0.25);
+  }
+
+  .backups-card h3 {
+    margin: 0 0 8px;
+  }
+
+  .backups-card p {
+    margin: 0 0 12px;
+    color: #9bb;
+  }
+
+  .stacked-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  @media (max-width: 980px) {
+    .backups-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

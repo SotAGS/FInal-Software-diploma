@@ -7,6 +7,8 @@ Un sistema completo de gestión empresarial con auditoría integrada, reportes i
 - ✅ **Autenticación de Usuarios:** Sistema de login con auditoría de accesos
 - ✅ **Gestión de Usuarios CRUD:** Crear, editar, eliminar usuarios con roles y permisos
 - ✅ **Gestión de Roles:** Crear roles y editar sus permisos desde la aplicación (solo ADMIN)
+- ✅ **Ventas a Clientes:** Carrito de ventas, confirmación y descuento automático de stock
+- ✅ **Backups por Aplicación:** Crear, limpiar y restaurar respaldos desde el módulo Backups (solo ADMIN)
 - ✅ **Auditoría Completa:** Registro persistente de todos los cambios en la BD
 - ✅ **3 Reportes Funcionales:** Con gráficos interactivos (Chart.js)
   - Desempeño de Compras (30 días)
@@ -75,7 +77,25 @@ npm run dev
 
 El servidor estará disponible en: `http://localhost:3000`
 
-### 6. Credenciales de prueba
+### 6. Flujo de Backups (instancia de examen)
+
+Desde la aplicación web (sin terminal):
+1. Iniciar sesión como ADMIN.
+2. Ir a menú lateral -> **Backups**.
+3. Crear backup (opcionalmente con nombre).
+4. Borrar datos del sistema.
+5. Restaurar último backup o elegir un archivo específico.
+
+Los archivos `.sql` se guardan en la carpeta local `backups/`.
+
+Comandos CLI opcionales (mismo motor, solo para testing):
+```bash
+npm run backup:create -- --name=pre-examen
+npm run backup:clear
+npm run backup:restore
+```
+
+### 7. Credenciales de prueba
 - Email: `admin@empresa.com`
 - Password: `admin123`
 
@@ -169,6 +189,8 @@ npm run test:coverage
 - `usuarios` (id, nombre, email, password, rol, activo)
 - `productos` (id, nombre, sku, stock, precio, activo)
 - `ordenes_compra` (id, proveedor_id, estado, fecha_creacion)
+- `ventas` (id, cliente_nombre, usuario_vendedor_id, total, fecha_creacion)
+- `ventas_items` (id, venta_id, producto_id, cantidad, precio_unitario, subtotal)
 - `auditoria` (id, usuario_id, entidad, id_entidad, accion, valor_anterior, valor_nuevo)
 - `login_logout` (id, usuario_id, tipo, email, motivo, fecha_hora)
 
@@ -183,6 +205,7 @@ Las migraciones en `/migrations/`:
 1. `001_create_database.sql` - Crea BD y estructura básica
 2. `002_create_tables.sql` - Todas las tablas
 3. `003_insert_seed_data.sql` - Datos de prueba
+4. `004+` - Evolutivos de seguridad, permisos, proveedores y ventas
 
 ## Compilación
 
@@ -227,9 +250,23 @@ npm start
 - `GET /Reportes/auditoria-accesos` - Reporte accesos
 - `GET /Reportes/api/*` - Versiones JSON
 
+### Ventas
+- `GET /Ventas` - Listado y carrito de ventas
+- `POST /Ventas/cart/add` - Agregar producto al carrito
+- `POST /Ventas/cart/remove` - Quitar producto del carrito
+- `POST /Ventas/confirmar` - Confirmar venta y descontar stock
+
+### Backups
+- `GET /Backups` - Pantalla de backups (solo ADMIN)
+- `POST /Backups/crear` - Crear backup desde aplicación
+- `POST /Backups/limpiar` - Borrar datos del sistema
+- `POST /Backups/restaurar-ultimo` - Restaurar último backup
+- `POST /Backups/restaurar` - Restaurar backup seleccionado
+
 ## Documentación Adicional
 
 - [INSTRUCTIVOS_USUARIO.md](./INSTRUCTIVOS_USUARIO.md) - Guía de uso para usuarios finales
+- [BACKUP_RESTORE_GUIDE.md](./BACKUP_RESTORE_GUIDE.md) - Guía para crear, borrar y restaurar backups
 - [tsconfig.json](./tsconfig.json) - Configuración TypeScript
 - [jest.config.js](./jest.config.js) - Configuración de pruebas
 
