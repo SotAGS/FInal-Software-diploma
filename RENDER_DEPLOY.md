@@ -18,27 +18,16 @@ Esta app usa **MySQL**. Render no ofrece MySQL administrado en todos los planes,
 
 Cargar estas variables:
 
-- `NODE_ENV=production`
-- `SESSION_SECRET=<string largo y privado>`
-- `APP_BASE_URL=https://<tu-servicio>.onrender.com`
-- `DATABASE_URL=<mysql://usuario:password@host:puerto/database>`
-- `SMTP_HOST=smtp.gmail.com`
-- `SMTP_PORT=587`
-- `SMTP_USER=<tu correo smtp>`
-- `SMTP_PASS=<app password>`
-- `SMTP_FROM=<tu correo smtp>`
 
 ### DATABASE_URL
 
 Usa la URL pública de tu proveedor MySQL externo como valor de `DATABASE_URL`.
 
 ## 3) Migraciones
-
+ El servicio arranca con `npm start` sin ejecutar migraciones automáticamente.
 Con esta configuración, el servicio arranca sin correr migraciones en startup.
 
 Opciones para migrar:
-
-- Ejecutar una vez localmente apuntando al mismo `DATABASE_URL`
 - O abrir Shell en Render y ejecutar `npm run migrate:prod`
 
 ## 4) Validación

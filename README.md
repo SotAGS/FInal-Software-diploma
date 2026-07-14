@@ -95,7 +95,11 @@ npm run backup:clear
 npm run backup:restore
 ```
 
-### 7. Credenciales de prueba
+### 7. Despliegue en Render
+
+El arranque de producción usa `npm start` para levantar la app sin ejecutar migraciones automáticamente. Si necesitás inicializar o actualizar la base de datos en Render, ejecutá `npm run migrate:prod` desde la Shell del servicio o corré `npm run migrate` apuntando al mismo `DATABASE_URL` desde tu entorno local.
+
+### 8. Credenciales de prueba
 - Email: `admin@empresa.com`
 - Password: `admin123`
 
