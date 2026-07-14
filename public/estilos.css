@@ -10,7 +10,7 @@
 }
 
 body {
-  background-color: #E8F5E9; /* light green background */
+  background-color: #ffffff;
   color: #2C2C2C;
 }
 
@@ -297,14 +297,14 @@ button {
 ========================= */
 
 :root {
-  --app-bg: #eef2f1;
+  --app-bg: #ffffff;
   --app-text: #1f2937;
   --surface: #ffffff;
   --surface-2: #f8fafc;
   --border: #e5e7eb;
   --title: #166534;
-  --header-bg: #ffffff;
-  --header-text: #111827;
+  --header-bg: #000000;
+  --header-text: #f3f4f6;
   --sidebar-bg: #1B5E20;
   --sidebar-link: #ffffff;
   --table-head-bg: #f1f8f4;
@@ -322,7 +322,7 @@ html[data-theme="dark"] {
   --surface-2: #0f141a;
   --border: #2a323d;
   --title: #86efac;
-  --header-bg: #0c1117;
+  --header-bg: #000000;
   --header-text: #f3f4f6;
   --sidebar-bg: #0f5e1b;
   --sidebar-link: #f3f4f6;
@@ -347,7 +347,7 @@ body,
 .header {
   background-color: var(--header-bg) !important;
   color: var(--header-text) !important;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #2a323d;
 }
 
 .header-left h2,
@@ -414,14 +414,14 @@ textarea {
 }
 
 .btn-logout {
-  color: var(--title) !important;
-  border-color: var(--border) !important;
+  color: #86efac !important;
+  border-color: #2a323d !important;
 }
 
 .theme-toggle {
   background: transparent;
-  color: var(--header-text);
-  border: 1px solid var(--border);
+  color: #f3f4f6;
+  border: 1px solid #2a323d;
   border-radius: 6px;
   padding: 6px 10px;
   cursor: pointer;
@@ -429,7 +429,7 @@ textarea {
 }
 
 .theme-toggle:hover {
-  background: var(--surface-2);
+  background: #0f141a;
 }
 
 html[data-theme="dark"] .reportes-container,

@@ -27,6 +27,17 @@
       <input id="cantidadVenta" type="number" name="cantidad" min="1" value="1" class="input-cantidad" />
       <button class="btn-success">Agregar al carrito</button>
     </form>
+
+    <form method="POST" action="/Ventas/confirmar" class="form-confirmar-venta">
+      <label for="clienteNombreVisible">Cliente</label>
+      <input id="clienteNombreVisible" type="text" value="Consumidor final" readonly />
+      <input type="hidden" name="clienteNombre" value="Consumidor final" />
+      <p><strong>Total:</strong> $<%= totalCarrito.toFixed(2) %></p>
+      <button class="btn-success" <%= (!cart || !cart.length) ? 'disabled' : '' %>>Confirmar venta</button>
+      <% if (!cart || !cart.length) { %>
+        <small class="ventas-ayuda">Agregá al menos un producto para confirmar la venta.</small>
+      <% } %>
+    </form>
   </div>
 
   <div class="ventas-columna-secundaria">
@@ -35,37 +46,35 @@
     <% if (!cart || !cart.length) { %>
       <p>El carrito esta vacio.</p>
     <% } else { %>
-      <table>
-        <tr>
-          <th>Producto</th>
-          <th>Cantidad</th>
-          <th>P. Unit.</th>
-          <th>Subtotal</th>
-          <th></th>
-        </tr>
-        <% cartDetalle.forEach(function(item){ %>
-          <tr>
-            <td><%= item.nombre %></td>
-            <td><%= item.cantidad %></td>
-            <td>$<%= item.precioUnitario.toFixed(2) %></td>
-            <td>$<%= item.subtotal.toFixed(2) %></td>
-            <td>
-              <form method="POST" action="/Ventas/cart/remove">
-                <input type="hidden" name="productoId" value="<%= item.productoId %>" />
-                <button class="btn-danger">Quitar</button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </table>
-
-      <form method="POST" action="/Ventas/confirmar" class="form-confirmar-venta">
-        <label for="clienteNombreVisible">Cliente</label>
-        <input id="clienteNombreVisible" type="text" value="Consumidor final" readonly />
-        <input type="hidden" name="clienteNombre" value="Consumidor final" />
-        <p><strong>Total:</strong> $<%= totalCarrito.toFixed(2) %></p>
-        <button class="btn-success">Confirmar venta</button>
-      </form>
+      <div class="carrito-scroll">
+        <table class="carrito-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>P. Unit.</th>
+              <th>Subtotal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% cartDetalle.forEach(function(item){ %>
+              <tr>
+                <td><%= item.nombre %></td>
+                <td><%= item.cantidad %></td>
+                <td>$<%= item.precioUnitario.toFixed(2) %></td>
+                <td>$<%= item.subtotal.toFixed(2) %></td>
+                <td>
+                  <form method="POST" action="/Ventas/cart/remove">
+                    <input type="hidden" name="productoId" value="<%= item.productoId %>" />
+                    <button class="btn-danger">Quitar</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
     <% } %>
   </div>
 </div>
@@ -104,11 +113,16 @@
 </table>
 
 <style>
+  .card-principal {
+    max-width: 1200px;
+  }
+
   .ventas-layout {
     display: grid;
-    grid-template-columns: minmax(320px, 0.9fr) minmax(500px, 1.3fr);
+    grid-template-columns: minmax(330px, 0.8fr) minmax(620px, 1.2fr);
     gap: 20px;
     margin-bottom: 20px;
+    align-items: start;
   }
 
   .ventas-columna-principal,
@@ -130,8 +144,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-width: 360px;
     margin-top: 12px;
+    width: 100%;
   }
 
   .input-filtro,
@@ -173,33 +187,73 @@
     box-sizing: border-box;
   }
 
+  .carrito-scroll {
+    max-height: 340px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+  }
+
+  .carrito-table {
+    width: 100%;
+    table-layout: fixed;
+    margin-top: 0;
+  }
+
+  .carrito-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
   .ventas-columna-secundaria table {
     width: 100%;
-    table-layout: auto;
+    table-layout: fixed;
   }
 
   .ventas-columna-secundaria td,
   .ventas-columna-secundaria th {
     white-space: nowrap;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ventas-columna-secundaria td:first-child,
   .ventas-columna-secundaria th:first-child {
-    white-space: normal;
-    width: 32%;
+    width: 36%;
+  }
+
+  .ventas-columna-secundaria td:nth-child(2),
+  .ventas-columna-secundaria th:nth-child(2) {
+    width: 12%;
+  }
+
+  .ventas-columna-secundaria td:nth-child(3),
+  .ventas-columna-secundaria th:nth-child(3) {
+    width: 18%;
+  }
+
+  .ventas-columna-secundaria td:nth-child(4),
+  .ventas-columna-secundaria th:nth-child(4) {
+    width: 18%;
   }
 
   .ventas-columna-secundaria td:last-child,
   .ventas-columna-secundaria th:last-child {
-    width: 90px;
+    width: 16%;
     text-align: center;
   }
 
   .ventas-columna-secundaria .btn-danger {
     white-space: nowrap;
-    min-width: 76px;
-    padding: 8px 10px;
+    min-width: 70px;
+    padding: 8px 8px;
+  }
+
+  .ventas-ayuda {
+    opacity: 0.75;
   }
 
   .label-cantidad {

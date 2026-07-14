@@ -158,15 +158,15 @@ export class RepositorioRol {
             );
 
             const rolActual = (rolRows as any[])[0];
-            const nombreFinal = String(rolActual?.nombre || "").toUpperCase() === "ADMIN"
-                ? "ADMIN"
-                : nombre;
+            if (String(rolActual?.nombre || "").toUpperCase() === "ADMIN") {
+                return false;
+            }
 
             await conexion.beginTransaction();
 
             await conexion.query(
                 `UPDATE roles SET nombre = ?, descripcion = ? WHERE id = ?`,
-                [nombreFinal, descripcion || null, id]
+                [nombre, descripcion || null, id]
             );
 
             await conexion.query(
