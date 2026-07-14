@@ -2,11 +2,28 @@ import { Request, Response } from "express";
 import { getPool } from "../config/database";
 import { RepositorioOrdenCompra } from "../Modelo/Repositorios/RepositorioOrdenCompra";
 import { RepositorioProveedor } from "../Modelo/Repositorios/RepositorioProveedor";
+import { RepositorioVenta } from "../Modelo/Repositorios/RepositorioVenta";
 import { ReportePdfKey, generarReportePdf } from "../Modelo/Servicios/ServicioReportesPdf";
 
 const repoOrden = RepositorioOrdenCompra.obtenerInstancia();
 const repoProveedor = RepositorioProveedor.obtenerInstancia();
+const repoVenta = RepositorioVenta.obtenerInstancia();
 const NOMBRE_LOCAL = "Almacen LeVain";
+
+const MESES_ES = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre"
+];
 
 const esModoPdf = (req: Request): boolean => {
     return String(req.query?.pdf || "") === "1";
@@ -194,6 +211,46 @@ export const mostrarProductosMasVendidos = async (req: any, res: Response): Prom
     }
 };
 
+/**
+ * REPORTE 5: Resumen mensual de ventas
+ * Totales vendidos por mes y producto más vendido en cada período.
+ */
+export const mostrarResumenVentasMensual = async (req: any, res: Response): Promise<void> => {
+    try {
+        const datosBase = await repoVenta.obtenerResumenMensualVentas();
+        const datos = datosBase.map((row) => ({
+            ...row,
+            mesNombre: `${MESES_ES[Math.max(0, row.mes - 1)]} ${row.anio}`
+        }));
+
+        renderizarReporte(req, res, "resumen-ventas-mensual", {
+            datos,
+            error: null,
+            nombreLocal: NOMBRE_LOCAL
+        });
+    } catch (error) {
+        console.error(error);
+        renderizarReporte(req, res, "resumen-ventas-mensual", {
+            datos: [],
+            error: "Error cargando reporte",
+            nombreLocal: NOMBRE_LOCAL
+        });
+    }
+};
+
+export const obtenerResumenVentasMensual = async (req: any, res: Response): Promise<void> => {
+    try {
+        const datosBase = await repoVenta.obtenerResumenMensualVentas();
+        const datos = datosBase.map((row) => ({
+            ...row,
+            mesNombre: `${MESES_ES[Math.max(0, row.mes - 1)]} ${row.anio}`
+        }));
+        res.json(datos);
+    } catch (error) {
+        res.json({ error: (error as any).message });
+    }
+};
+
 export const obtenerProductosMasVendidos = async (req: any, res: Response): Promise<void> => {
     try {
         const datos = await queryProductosMasVendidos();
@@ -220,7 +277,8 @@ export const descargarReportePdf = async (req: Request, res: Response): Promise<
             "rotacion-inventario",
             "auditoria-accesos",
             "productos-mas-vendidos",
-            "busqueda-ordenes-fecha"
+            "busqueda-ordenes-fecha",
+            "resumen-ventas-mensual"
         ];
 
         if (!reportesValidos.includes(reporte)) {

@@ -8,6 +8,88 @@ const repoProducto = RepositorioProducto.obtenerInstancia();
 const repoVenta = RepositorioVenta.obtenerInstancia();
 const servicioAuditoria = ServicioAuditoria.obtenerInstancia();
 
+const REGEX_FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+const esFechaIsoValida = (valor?: string): boolean => {
+    if (!valor || !REGEX_FECHA_ISO.test(valor)) {
+        return false;
+    }
+
+    const fecha = new Date(`${valor}T00:00:00`);
+    return !Number.isNaN(fecha.getTime());
+};
+
+const construirFiltrosFecha = (req: Request): {
+    filtros: { fecha?: string; desde?: string; hasta?: string };
+    error: string | null;
+    modo: "ninguno" | "dia" | "rango";
+} => {
+    const fecha = typeof req.query.fecha === "string" ? req.query.fecha.trim() : "";
+    const desde = typeof req.query.desde === "string" ? req.query.desde.trim() : "";
+    const hasta = typeof req.query.hasta === "string" ? req.query.hasta.trim() : "";
+
+    const hayFiltroDia = Boolean(fecha);
+    const hayFiltroRango = Boolean(desde || hasta);
+
+    if (hayFiltroDia && hayFiltroRango) {
+        return {
+            filtros: {},
+            error: "Elegi un unico tipo de filtro: por dia o por rango de fechas.",
+            modo: "ninguno"
+        };
+    }
+
+    if (hayFiltroDia) {
+        if (!esFechaIsoValida(fecha)) {
+            return {
+                filtros: {},
+                error: "La fecha del filtro por dia no es valida.",
+                modo: "ninguno"
+            };
+        }
+
+        return {
+            filtros: { fecha },
+            error: null,
+            modo: "dia"
+        };
+    }
+
+    if (hayFiltroRango) {
+        if (!desde || !hasta) {
+            return {
+                filtros: {},
+                error: "Para filtrar por rango, completa ambas fechas: desde y hasta.",
+                modo: "ninguno"
+            };
+        }
+
+        if (!esFechaIsoValida(desde) || !esFechaIsoValida(hasta)) {
+            return {
+                filtros: {},
+                error: "Las fechas del rango no son validas.",
+                modo: "ninguno"
+            };
+        }
+
+        if (desde > hasta) {
+            return {
+                filtros: {},
+                error: "La fecha 'desde' no puede ser mayor que la fecha 'hasta'.",
+                modo: "ninguno"
+            };
+        }
+
+        return {
+            filtros: { desde, hasta },
+            error: null,
+            modo: "rango"
+        };
+    }
+
+    return { filtros: {}, error: null, modo: "ninguno" };
+};
+
 const obtenerCarrito = (req: any): { productoId: number; cantidad: number }[] => {
     if (!req.session) {
         req.session = {};
@@ -19,7 +101,8 @@ const obtenerCarrito = (req: any): { productoId: number; cantidad: number }[] =>
 
 export const mostrarVentas = async (req: any, res: Response): Promise<void> => {
     const productos = await repoProducto.obtenerTodos();
-    const ventas = await repoVenta.obtenerTodos();
+    const filtroVentas = construirFiltrosFecha(req);
+    const ventas = await repoVenta.obtenerTodos(filtroVentas.filtros);
     const cart = obtenerCarrito(req);
 
     const productosMap: Record<number, any> = {};
@@ -56,6 +139,13 @@ export const mostrarVentas = async (req: any, res: Response): Promise<void> => {
         cart,
         cartDetalle,
         totalCarrito,
+        filtrosVenta: {
+            fecha: filtroVentas.filtros.fecha || "",
+            desde: filtroVentas.filtros.desde || "",
+            hasta: filtroVentas.filtros.hasta || "",
+            modo: filtroVentas.modo
+        },
+        errorFiltroVentas: filtroVentas.error,
         session: req.session
     });
 };

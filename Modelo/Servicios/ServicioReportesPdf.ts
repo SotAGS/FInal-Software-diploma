@@ -55,14 +55,16 @@ export type ReportePdfKey =
   | "rotacion-inventario"
   | "auditoria-accesos"
   | "productos-mas-vendidos"
-  | "busqueda-ordenes-fecha";
+  | "busqueda-ordenes-fecha"
+  | "resumen-ventas-mensual";
 
 const rutasReporte: Record<ReportePdfKey, string> = {
   "desempenio-compras": "/Reportes/desempenio-compras",
   "rotacion-inventario": "/Reportes/rotacion-inventario",
   "auditoria-accesos": "/Reportes/auditoria-accesos",
   "productos-mas-vendidos": "/Reportes/productos-mas-vendidos",
-  "busqueda-ordenes-fecha": "/Reportes/busqueda-ordenes-fecha"
+  "busqueda-ordenes-fecha": "/Reportes/busqueda-ordenes-fecha",
+  "resumen-ventas-mensual": "/Reportes/resumen-ventas-mensual"
 };
 
 const slugSeguro = (valor: string): string => {

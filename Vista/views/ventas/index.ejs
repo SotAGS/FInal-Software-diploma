@@ -82,6 +82,41 @@
 <hr />
 
 <h3>Historial de ventas</h3>
+<div class="filtros-ventas-historial">
+  <form method="GET" action="/Ventas" class="filtro-ventas-form">
+    <h4>Filtrar por dia</h4>
+    <label for="filtroFechaVenta">Fecha</label>
+    <input type="date" id="filtroFechaVenta" name="fecha" value="<%= (filtrosVenta && filtrosVenta.fecha) ? filtrosVenta.fecha : '' %>" />
+    <div class="acciones-filtro-ventas">
+      <button type="submit" class="btn-success">Filtrar</button>
+      <a href="/Ventas" class="btn-secondary-link">Limpiar</a>
+    </div>
+  </form>
+
+  <form method="GET" action="/Ventas" class="filtro-ventas-form">
+    <h4>Filtrar entre 2 fechas</h4>
+    <label for="filtroDesdeVenta">Desde</label>
+    <input type="date" id="filtroDesdeVenta" name="desde" value="<%= (filtrosVenta && filtrosVenta.desde) ? filtrosVenta.desde : '' %>" />
+
+    <label for="filtroHastaVenta">Hasta</label>
+    <input type="date" id="filtroHastaVenta" name="hasta" value="<%= (filtrosVenta && filtrosVenta.hasta) ? filtrosVenta.hasta : '' %>" />
+
+    <div class="acciones-filtro-ventas">
+      <button type="submit" class="btn-success">Filtrar</button>
+      <a href="/Ventas" class="btn-secondary-link">Limpiar</a>
+    </div>
+  </form>
+</div>
+
+<% if (errorFiltroVentas) { %>
+  <div class="alert alert-error"><%= errorFiltroVentas %></div>
+<% } %>
+
+<% const hayFiltroActivo = Boolean((filtrosVenta && filtrosVenta.fecha) || (filtrosVenta && filtrosVenta.desde) || (filtrosVenta && filtrosVenta.hasta)); %>
+<% if (hayFiltroActivo) { %>
+  <p class="ventas-ayuda">Mostrando resultados filtrados.</p>
+<% } %>
+
 <table>
   <tr>
     <th>ID</th>
@@ -256,12 +291,51 @@
     opacity: 0.75;
   }
 
+  .filtros-ventas-historial {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .filtro-ventas-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 12px;
+  }
+
+  .filtro-ventas-form h4 {
+    margin: 0;
+  }
+
+  .acciones-filtro-ventas {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-secondary-link {
+    display: inline-block;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: inherit;
+  }
+
   .label-cantidad {
     font-weight: 600;
   }
 
   @media (max-width: 980px) {
     .ventas-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .filtros-ventas-historial {
       grid-template-columns: 1fr;
     }
 
