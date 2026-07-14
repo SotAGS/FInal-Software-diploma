@@ -4,20 +4,20 @@ Un sistema completo de gestión empresarial con auditoría integrada, reportes i
 
 ## Características
 
-- ✅ **Autenticación de Usuarios:** Sistema de login con auditoría de accesos
-- ✅ **Gestión de Usuarios CRUD:** Crear, editar, eliminar usuarios con roles y permisos
-- ✅ **Gestión de Roles:** Crear roles y editar sus permisos desde la aplicación (solo ADMIN)
-- ✅ **Ventas a Clientes:** Carrito de ventas, confirmación y descuento automático de stock
-- ✅ **Backups por Aplicación:** Crear, limpiar y restaurar respaldos desde el módulo Backups (solo ADMIN)
-- ✅ **Auditoría Completa:** Registro persistente de todos los cambios en la BD
-- ✅ **3 Reportes Funcionales:** Con gráficos interactivos (Chart.js)
+- **Autenticación de Usuarios:** Sistema de login con auditoría de accesos
+- **Gestión de Usuarios CRUD:** Crear, editar, eliminar usuarios con roles y permisos
+- **Gestión de Roles:** Crear roles y editar sus permisos desde la aplicación (solo ADMIN)
+- **Ventas a Clientes:** Carrito de ventas, confirmación y descuento automático de stock
+- **Backups por Aplicación:** Crear, limpiar y restaurar respaldos desde el módulo Backups (solo ADMIN)
+- **Auditoría Completa:** Registro persistente de todos los cambios en la BD
+- **3 Reportes Funcionales:** Con gráficos interactivos (Chart.js)
   - Desempeño de Compras (30 días)
   - Rotación de Inventario (alertas por stock)
   - Auditoría de Accesos (7 días)
-- ✅ **Pruebas Unitarias:** Jest con pruebas de caja blanca y negra
-- ✅ **State Pattern:** Para gestionar estados de órdenes de compra
-- ✅ **Repository Pattern:** Acceso a datos normalizado
-- ✅ **Permissions System:** Composite pattern para permisos granulares
+- **Pruebas Unitarias:** Jest con pruebas de caja blanca y negra
+- **State Pattern:** Para gestionar estados de órdenes de compra
+- **Repository Pattern:** Acceso a datos normalizado
+- **Permissions System:** Composite pattern para permisos granulares
 
 ## Stack Tecnológico
 
@@ -174,9 +174,9 @@ npm run test:coverage
 - Tabla `login_logout` con: tipo (LOGIN/LOGOUT/LOGIN_FAIL), fecha, usuario
 
 ### Login Auditing
-- ✅ LOGIN exitoso registrado
-- ✅ LOGIN_FAIL registrado con motivo
-- ✅ LOGOUT registrado
+- LOGIN exitoso registrado
+- LOGIN_FAIL registrado con motivo
+- LOGOUT registrado
 
 ### Roles y Permisos
 - ADMIN: Acceso total
