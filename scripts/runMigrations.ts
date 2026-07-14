@@ -9,6 +9,7 @@ async function runMigrations() {
     await initializePool();
     const pool = getPool();
     const migrationsDir = path.join(process.cwd(), 'migrations');
+    let exitCode = 0;
 
     try {
         console.log('🔄 Iniciando migraciones...');
@@ -88,8 +89,16 @@ async function runMigrations() {
 
         console.log('\n✨ ¡Todas las migraciones completadas exitosamente!');
     } catch (error) {
+        exitCode = 1;
         console.error('❌ Error durante las migraciones:', error);
-        process.exit(1);
+    } finally {
+        try {
+            await pool.end();
+        } catch (closeError) {
+            console.error('⚠ No se pudo cerrar el pool de migraciones:', (closeError as any)?.message || closeError);
+        }
+
+        process.exit(exitCode);
     }
 }
 
