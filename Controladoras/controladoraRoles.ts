@@ -115,10 +115,6 @@ export const mostrarFormularioEditarRol = async (req: any, res: Response): Promi
             return res.redirect("/Roles?error=Rol no encontrado");
         }
 
-        if (rol.nombre === "ADMIN") {
-            return res.redirect("/Roles?error=El rol ADMIN está protegido y no se puede editar");
-        }
-
         res.render("roles/editar", {
             titulo: "Editar Rol",
             rol,
@@ -141,11 +137,8 @@ export const actualizarRol = async (req: any, res: Response): Promise<void> => {
             return res.redirect("/Roles?error=Rol no encontrado");
         }
 
-        if (rolActual.nombre === "ADMIN") {
-            return res.redirect("/Roles?error=El rol ADMIN está protegido y no se puede editar");
-        }
-
-        const nombre = String(req.body.nombre || "").trim().toUpperCase();
+        const nombreEnviado = String(req.body.nombre || "").trim().toUpperCase();
+        const nombre = rolActual.nombre === "ADMIN" ? "ADMIN" : nombreEnviado;
         const descripcion = String(req.body.descripcion || "").trim();
         const permisos = obtenerPermisosDesdeBody(req.body);
 

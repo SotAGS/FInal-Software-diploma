@@ -158,15 +158,15 @@ export class RepositorioRol {
             );
 
             const rolActual = (rolRows as any[])[0];
-            if (String(rolActual?.nombre || "").toUpperCase() === "ADMIN") {
-                return false;
-            }
+            const nombreFinal = String(rolActual?.nombre || "").toUpperCase() === "ADMIN"
+                ? "ADMIN"
+                : nombre;
 
             await conexion.beginTransaction();
 
             await conexion.query(
                 `UPDATE roles SET nombre = ?, descripcion = ? WHERE id = ?`,
-                [nombre, descripcion || null, id]
+                [nombreFinal, descripcion || null, id]
             );
 
             await conexion.query(
@@ -402,6 +402,16 @@ export class RepositorioRol {
         for (const row of rolesRows as any[]) {
             const nombreRol = String(row.nombre || "").toUpperCase();
             const permisosBase = RepositorioRol.PERMISOS_BASE_POR_ROL[nombreRol] || [];
+
+            const [conteoRows] = await executor.query(
+                `SELECT COUNT(*) AS total FROM rol_permisos WHERE rol_id = ?`,
+                [row.id]
+            );
+
+            const permisosExistentes = Number((conteoRows as any[])[0]?.total || 0);
+            if (permisosExistentes > 0) {
+                continue;
+            }
 
             for (const codigoPermiso of permisosBase) {
                 await executor.query(

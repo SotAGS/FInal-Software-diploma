@@ -29,8 +29,8 @@
             <td><%= rol.descripcion || '-' %></td>
             <td><%= rol.permisos.length %></td>
             <td>
+              <a href="/Roles/<%= rol.id %>/editar" class="btn btn-small btn-secondary">Editar permisos</a>
               <% if (rol.nombre !== 'ADMIN') { %>
-                <a href="/Roles/<%= rol.id %>/editar" class="btn btn-small btn-secondary">Editar permisos</a>
                 <form method="POST" action="/Roles/<%= rol.id %>/eliminar" style="display: inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar este rol?');">
                   <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
                 </form>
