@@ -105,48 +105,60 @@ export class RepositorioVenta {
         const pool = getPool();
         await this.asegurarTablas(pool);
 
-        const [rows] = await pool.query<any[]>(`
+        const [resumenRows] = await pool.query<any[]>(`
             SELECT
                 DATE_FORMAT(v.fecha_creacion, '%Y-%m') AS periodo,
                 YEAR(v.fecha_creacion) AS anio,
                 MONTH(v.fecha_creacion) AS mes,
                 SUM(vi.cantidad) AS total_productos_vendidos,
-                ROUND(SUM(vi.subtotal), 2) AS total_ventas,
-                (
-                    SELECT p2.nombre
-                    FROM ventas_items vi2
-                    JOIN ventas v2 ON v2.id = vi2.venta_id
-                    JOIN productos p2 ON p2.id = vi2.producto_id
-                    WHERE DATE_FORMAT(v2.fecha_creacion, '%Y-%m') = DATE_FORMAT(v.fecha_creacion, '%Y-%m')
-                    GROUP BY p2.id, p2.nombre
-                    ORDER BY SUM(vi2.cantidad) DESC, p2.nombre ASC
-                    LIMIT 1
-                ) AS producto_mas_vendido,
-                (
-                    SELECT SUM(vi3.cantidad)
-                    FROM ventas_items vi3
-                    JOIN ventas v3 ON v3.id = vi3.venta_id
-                    JOIN productos p3 ON p3.id = vi3.producto_id
-                    WHERE DATE_FORMAT(v3.fecha_creacion, '%Y-%m') = DATE_FORMAT(v.fecha_creacion, '%Y-%m')
-                    GROUP BY p3.id, p3.nombre
-                    ORDER BY SUM(vi3.cantidad) DESC, p3.nombre ASC
-                    LIMIT 1
-                ) AS cantidad_producto_mas_vendido
+                ROUND(SUM(vi.subtotal), 2) AS total_ventas
             FROM ventas v
             JOIN ventas_items vi ON vi.venta_id = v.id
             GROUP BY DATE_FORMAT(v.fecha_creacion, '%Y-%m'), YEAR(v.fecha_creacion), MONTH(v.fecha_creacion)
             ORDER BY anio DESC, mes DESC
         `);
 
-        return (rows as any[]).map((row: any) => ({
-            periodo: String(row.periodo),
-            anio: Number(row.anio),
-            mes: Number(row.mes),
-            totalProductosVendidos: Number(row.total_productos_vendidos || 0),
-            totalVentas: Number(row.total_ventas || 0),
-            productoMasVendido: String(row.producto_mas_vendido || "Sin datos"),
-            cantidadProductoMasVendido: Number(row.cantidad_producto_mas_vendido || 0)
-        }));
+        if ((resumenRows as any[]).length === 0) {
+            return [];
+        }
+
+        const [topRows] = await pool.query<any[]>(`
+            SELECT
+                DATE_FORMAT(v.fecha_creacion, '%Y-%m') AS periodo,
+                p.nombre AS producto,
+                SUM(vi.cantidad) AS cantidad
+            FROM ventas v
+            JOIN ventas_items vi ON vi.venta_id = v.id
+            JOIN productos p ON p.id = vi.producto_id
+            GROUP BY DATE_FORMAT(v.fecha_creacion, '%Y-%m'), p.id, p.nombre
+            ORDER BY periodo DESC, cantidad DESC, producto ASC
+        `);
+
+        const topPorPeriodo = new Map<string, { producto: string; cantidad: number }>();
+        for (const row of topRows as any[]) {
+            const periodo = String(row.periodo);
+            if (!topPorPeriodo.has(periodo)) {
+                topPorPeriodo.set(periodo, {
+                    producto: String(row.producto || "Sin datos"),
+                    cantidad: Number(row.cantidad || 0)
+                });
+            }
+        }
+
+        return (resumenRows as any[]).map((row: any) => {
+            const periodo = String(row.periodo);
+            const top = topPorPeriodo.get(periodo);
+
+            return {
+                periodo,
+                anio: Number(row.anio),
+                mes: Number(row.mes),
+                totalProductosVendidos: Number(row.total_productos_vendidos || 0),
+                totalVentas: Number(row.total_ventas || 0),
+                productoMasVendido: top ? top.producto : "Sin datos",
+                cantidadProductoMasVendido: top ? Number(top.cantidad || 0) : 0
+            };
+        });
     }
 
     public async crear(clienteNombre: string, itemsSolicitados: { productoId: number; cantidad: number }[], usuarioVendedorId?: number): Promise<Venta> {
