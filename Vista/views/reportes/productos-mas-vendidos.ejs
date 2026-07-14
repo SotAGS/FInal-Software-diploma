@@ -1,0 +1,250 @@
+<div class="reportes-container">
+  <h1><%= (typeof nombreLocal !== 'undefined' && nombreLocal) ? nombreLocal : 'Almacen LeVain' %></h1>
+  <h2>Productos Más Vendidos</h2>
+  <p class="subtitle">Ranking de productos vendidos con su marca/proveedor</p>
+
+  <div class="acciones-reporte no-print">
+    <a href="/Reportes/pdf/productos-mas-vendidos" class="btn btn-primary">Descargar PDF</a>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
+
+  <% if (datos && datos.length > 0) { %>
+    <div class="stats-summary">
+      <div class="stat-card">
+        <div class="stat-value"><%= datos.length %></div>
+        <div class="stat-label">Productos en ranking</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= datos.reduce((acc, d) => acc + Number(d.unidades_vendidas || 0), 0) %></div>
+        <div class="stat-label">Unidades vendidas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">$<%= datos.reduce((acc, d) => acc + Number(d.ingresos_totales || 0), 0).toFixed(2) %></div>
+        <div class="stat-label">Ingresos totales</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= new Set(datos.map(d => d.marca)).size %></div>
+        <div class="stat-label">Marcas</div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Producto</th>
+            <th>Marca</th>
+            <th>Unidades Vendidas</th>
+            <th>Ventas Participadas</th>
+            <th>Ingresos Totales</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% datos.forEach((row, index) => { %>
+            <tr>
+              <td><strong><%= index + 1 %></strong></td>
+              <td><%= row.producto %></td>
+              <td><%= row.marca %></td>
+              <td class="text-center"><%= Number(row.unidades_vendidas || 0) %></td>
+              <td class="text-center"><%= Number(row.ventas_participadas || 0) %></td>
+              <td class="text-right">$<%= Number(row.ingresos_totales || 0).toFixed(2) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>Top 10 Productos por Unidades Vendidas</h3>
+      <canvas id="topProductosChart" height="80"></canvas>
+    </div>
+  <% } else { %>
+    <p class="no-data">No hay ventas registradas para construir este reporte.</p>
+  <% } %>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  window.__REPORT_READY__ = false;
+  const datos = <%- JSON.stringify(datos || []) %>;
+
+  if (datos.length > 0) {
+    const top = datos.slice(0, 10);
+    const ctx = document.getElementById('topProductosChart').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const chartTextColor = isDark ? '#e5e7eb' : '#374151';
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: top.map(x => `${x.producto} (${x.marca})`),
+        datasets: [{
+          label: 'Unidades vendidas',
+          data: top.map(x => Number(x.unidades_vendidas || 0)),
+          backgroundColor: 'rgba(76, 175, 80, 0.75)',
+          borderColor: 'rgba(46, 125, 50, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            labels: {
+              color: chartTextColor
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: chartTextColor },
+            grid: { color: isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(71, 85, 105, 0.2)' }
+          },
+          y: {
+            ticks: { color: chartTextColor },
+            grid: { color: 'rgba(0,0,0,0)' }
+          }
+        }
+      }
+    });
+
+    setTimeout(() => {
+      window.__REPORT_READY__ = true;
+    }, 300);
+  } else {
+    window.__REPORT_READY__ = true;
+  }
+</script>
+
+<style>
+  .reportes-container {
+    padding: 20px;
+  }
+
+  h2 {
+    margin-top: 8px;
+    color: #1B5E20;
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .acciones-reporte {
+    margin-bottom: 16px;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 4px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .btn-primary {
+    background-color: #2196f3;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: #1976d2;
+  }
+
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+  }
+
+  .alert-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #c62828;
+  }
+
+  .stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  .stat-card {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+  }
+
+  .report-section {
+    margin: 30px 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+  }
+
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .report-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .report-table tr:hover {
+    background-color: #f5f5f5;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .no-data {
+    text-align: center;
+    color: #999;
+    padding: 30px;
+    font-style: italic;
+  }
+</style>

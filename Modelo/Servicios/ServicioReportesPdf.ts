@@ -54,12 +54,14 @@ export type ReportePdfKey =
   | "desempenio-compras"
   | "rotacion-inventario"
   | "auditoria-accesos"
+  | "productos-mas-vendidos"
   | "busqueda-ordenes-fecha";
 
 const rutasReporte: Record<ReportePdfKey, string> = {
   "desempenio-compras": "/Reportes/desempenio-compras",
   "rotacion-inventario": "/Reportes/rotacion-inventario",
   "auditoria-accesos": "/Reportes/auditoria-accesos",
+  "productos-mas-vendidos": "/Reportes/productos-mas-vendidos",
   "busqueda-ordenes-fecha": "/Reportes/busqueda-ordenes-fecha"
 };
 

@@ -180,6 +180,29 @@ export const mostrarAuditoriaAccesos = async (req: any, res: Response): Promise<
     }
 };
 
+/**
+ * REPORTE 4: Productos más vendidos
+ * Ranking de productos por unidades vendidas con su marca/proveedor.
+ */
+export const mostrarProductosMasVendidos = async (req: any, res: Response): Promise<void> => {
+    try {
+        const datos = await queryProductosMasVendidos();
+        renderizarReporte(req, res, "productos-mas-vendidos", { datos, error: null, nombreLocal: NOMBRE_LOCAL });
+    } catch (error) {
+        console.error(error);
+        renderizarReporte(req, res, "productos-mas-vendidos", { datos: [], error: "Error cargando reporte", nombreLocal: NOMBRE_LOCAL });
+    }
+};
+
+export const obtenerProductosMasVendidos = async (req: any, res: Response): Promise<void> => {
+    try {
+        const datos = await queryProductosMasVendidos();
+        res.json(datos);
+    } catch (error) {
+        res.json({ error: (error as any).message });
+    }
+};
+
 export const obtenerAuditoriaAccesos = async (req: any, res: Response): Promise<void> => {
     try {
         const datos = await queryAuditoriaAccesos();
@@ -196,6 +219,7 @@ export const descargarReportePdf = async (req: Request, res: Response): Promise<
             "desempenio-compras",
             "rotacion-inventario",
             "auditoria-accesos",
+            "productos-mas-vendidos",
             "busqueda-ordenes-fecha"
         ];
 
@@ -270,6 +294,26 @@ async function queryAuditoriaAccesos() {
         WHERE ll.${campoFecha} >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         GROUP BY DATE_FORMAT(ll.${campoFecha}, '%Y-%m-%d'), u.email, u.nombre, u.id
         ORDER BY fecha DESC
+    `);
+    return rows;
+}
+
+async function queryProductosMasVendidos() {
+    const pool = getPool();
+    const [rows] = await pool.query(`
+        SELECT
+            p.id,
+            p.nombre AS producto,
+            COALESCE(pr.nombre, 'Sin marca/proveedor') AS marca,
+            SUM(vi.cantidad) AS unidades_vendidas,
+            ROUND(SUM(vi.subtotal), 2) AS ingresos_totales,
+            COUNT(DISTINCT v.id) AS ventas_participadas
+        FROM ventas_items vi
+        JOIN ventas v ON v.id = vi.venta_id
+        JOIN productos p ON p.id = vi.producto_id
+        LEFT JOIN proveedores pr ON pr.id = p.proveedor_id
+        GROUP BY p.id, p.nombre, pr.nombre
+        ORDER BY unidades_vendidas DESC, ingresos_totales DESC, p.nombre ASC
     `);
     return rows;
 }

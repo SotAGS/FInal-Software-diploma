@@ -132,9 +132,7 @@ export const confirmarVenta = async (req: any, res: Response): Promise<void> => 
         return res.redirect("/Ventas");
     }
 
-    const clienteNombre = typeof req.body?.clienteNombre === "string" && req.body.clienteNombre.trim()
-        ? req.body.clienteNombre.trim()
-        : "Consumidor final";
+    const clienteNombre = "Consumidor final";
 
     const usuarioSesionId = Number(req.session?.usuarioId);
     const usuarioVendedorId = Number.isFinite(usuarioSesionId) && usuarioSesionId > 0

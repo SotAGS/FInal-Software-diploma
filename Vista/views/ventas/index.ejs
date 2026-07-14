@@ -1,7 +1,8 @@
 <h1>Ventas a Clientes</h1>
 
 <% if (typeof session !== 'undefined' && session.message) { %>
-  <div class="alert"><%= session.message %></div>
+  <% const esErrorMensaje = /(insuficiente|no se pudo|debe|no existe|vacio|invál|inval)/i.test(session.message); %>
+  <div class="alert <%= esErrorMensaje ? 'alert-error' : 'alert-success' %>"><%= session.message %></div>
   <% session.message = null; %>
 <% } %>
 
@@ -59,8 +60,9 @@
       </table>
 
       <form method="POST" action="/Ventas/confirmar" class="form-confirmar-venta">
-        <label for="clienteNombre">Cliente</label>
-        <input id="clienteNombre" name="clienteNombre" type="text" value="Consumidor final" maxlength="150" required />
+        <label for="clienteNombreVisible">Cliente</label>
+        <input id="clienteNombreVisible" type="text" value="Consumidor final" readonly />
+        <input type="hidden" name="clienteNombre" value="Consumidor final" />
         <p><strong>Total:</strong> $<%= totalCarrito.toFixed(2) %></p>
         <button class="btn-success">Confirmar venta</button>
       </form>
@@ -134,9 +136,35 @@
 
   .input-filtro,
   .input-cantidad,
-  #clienteNombre {
+  #clienteNombreVisible {
     width: 100%;
     box-sizing: border-box;
+  }
+
+  #clienteNombreVisible[readonly] {
+    opacity: 0.95;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .alert {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  .alert-success {
+    color: #b9f6ca;
+    border-color: #2e7d32;
+    background: rgba(46, 125, 50, 0.2);
+  }
+
+  .alert-error {
+    color: #ffcdd2;
+    border-color: #c62828;
+    background: rgba(198, 40, 40, 0.2);
   }
 
   .select-productos {
