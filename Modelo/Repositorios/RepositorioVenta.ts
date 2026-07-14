@@ -3,6 +3,7 @@ import { Venta, VentaItem } from "../Entidades/Venta";
 
 export class RepositorioVenta {
     private static instancia: RepositorioVenta;
+    private tablasVerificadas = false;
 
     public static obtenerInstancia(): RepositorioVenta {
         if (!RepositorioVenta.instancia) {
@@ -14,6 +15,7 @@ export class RepositorioVenta {
 
     public async obtenerTodos(): Promise<Venta[]> {
         const pool = getPool();
+        await this.asegurarTablas(pool);
         const [ventasRows] = await pool.query<any[]>(
             `SELECT id, cliente_nombre, usuario_vendedor_id, total, fecha_creacion
              FROM ventas
@@ -66,6 +68,7 @@ export class RepositorioVenta {
         }
 
         const pool = getPool();
+        await this.asegurarTablas(pool);
         const conexion = await pool.getConnection();
 
         try {
@@ -150,5 +153,37 @@ export class RepositorioVenta {
         } finally {
             conexion.release();
         }
+    }
+
+    private async asegurarTablas(executor: { query: (sql: string, values?: any[]) => Promise<any> }): Promise<void> {
+        if (this.tablasVerificadas) {
+            return;
+        }
+
+        await executor.query(`
+            CREATE TABLE IF NOT EXISTS ventas (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                cliente_nombre VARCHAR(150) NOT NULL,
+                usuario_vendedor_id INT NULL,
+                total DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (usuario_vendedor_id) REFERENCES usuarios(id) ON DELETE SET NULL
+            )
+        `);
+
+        await executor.query(`
+            CREATE TABLE IF NOT EXISTS ventas_items (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                venta_id INT NOT NULL,
+                producto_id INT NOT NULL,
+                cantidad INT NOT NULL,
+                precio_unitario DECIMAL(10, 2) NOT NULL,
+                subtotal DECIMAL(12, 2) NOT NULL,
+                FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE CASCADE,
+                FOREIGN KEY (producto_id) REFERENCES productos(id)
+            )
+        `);
+
+        this.tablasVerificadas = true;
     }
 }
