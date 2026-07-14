@@ -25,6 +25,8 @@ export class RepositorioRol {
         { codigo: "VER_STOCK", descripcion: "Ver stock", modulo: "Inventario" },
         { codigo: "CREAR_ORDEN_COMPRA", descripcion: "Crear orden de compra", modulo: "Compras" },
         { codigo: "EDITAR_ORDEN_COMPRA", descripcion: "Editar orden de compra", modulo: "Compras" },
+        { codigo: "CREAR_VENTA", descripcion: "Crear venta", modulo: "Ventas" },
+        { codigo: "EDITAR_VENTA", descripcion: "Editar venta", modulo: "Ventas" },
         { codigo: "VER_REPORTES", descripcion: "Ver reportes", modulo: "Reportes" },
         { codigo: "GESTIONAR_USUARIOS", descripcion: "Gestionar usuarios", modulo: "Seguridad" },
         { codigo: "GESTIONAR_ROLES", descripcion: "Gestionar roles", modulo: "Seguridad" }
@@ -38,6 +40,8 @@ export class RepositorioRol {
             "VER_STOCK",
             "CREAR_ORDEN_COMPRA",
             "EDITAR_ORDEN_COMPRA",
+            "CREAR_VENTA",
+            "EDITAR_VENTA",
             "VER_REPORTES",
             "GESTIONAR_USUARIOS",
             "GESTIONAR_ROLES"
@@ -46,11 +50,14 @@ export class RepositorioRol {
             "VER_STOCK",
             "CREAR_ORDEN_COMPRA",
             "EDITAR_ORDEN_COMPRA",
+            "CREAR_VENTA",
+            "EDITAR_VENTA",
             "VER_REPORTES",
             "GESTIONAR_USUARIOS"
         ],
         EMPLEADO: [
-            "VER_STOCK"
+            "VER_STOCK",
+            "CREAR_VENTA"
         ]
     };
 

@@ -108,6 +108,16 @@ export class RepositorioUsuario {
             "Editar orden de compra"
         );
 
+        const crearVenta = new PermisoAtomico(
+            "CREAR_VENTA",
+            "Crear venta"
+        );
+
+        const editarVenta = new PermisoAtomico(
+            "EDITAR_VENTA",
+            "Editar venta"
+        );
+
         const verReportes = new PermisoAtomico(
             "VER_REPORTES",
             "Ver reportes"
@@ -133,6 +143,8 @@ export class RepositorioUsuario {
         permisosAdmin.agregar(verStock);
         permisosAdmin.agregar(crearOrdenCompra);
         permisosAdmin.agregar(editarOrdenCompra);
+        permisosAdmin.agregar(crearVenta);
+        permisosAdmin.agregar(editarVenta);
         permisosAdmin.agregar(verReportes);
         permisosAdmin.agregar(gestionarUsuarios);
 
@@ -150,6 +162,8 @@ export class RepositorioUsuario {
         permisosGerente.agregar(verStock);
         permisosGerente.agregar(crearOrdenCompra);
         permisosGerente.agregar(editarOrdenCompra);
+        permisosGerente.agregar(crearVenta);
+        permisosGerente.agregar(editarVenta);
         permisosGerente.agregar(verReportes);
         permisosGerente.agregar(gestionarUsuarios); // El dueño también gestiona usuarios
 
@@ -165,6 +179,7 @@ export class RepositorioUsuario {
         );
 
         permisosEmpleado.agregar(verStock);
+        permisosEmpleado.agregar(crearVenta);
 
         const rolEmpleado = new Rol("EMPLEADO", permisosEmpleado);
 

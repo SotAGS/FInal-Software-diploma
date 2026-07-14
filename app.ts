@@ -82,6 +82,8 @@ app.use(async (req: any, res, next) => {
         permisosAdmin.agregar(new PermisoAtomico("VER_STOCK", "Ver stock"));
         permisosAdmin.agregar(new PermisoAtomico("CREAR_ORDEN_COMPRA", "Crear orden de compra"));
         permisosAdmin.agregar(new PermisoAtomico("EDITAR_ORDEN_COMPRA", "Editar orden de compra"));
+        permisosAdmin.agregar(new PermisoAtomico("CREAR_VENTA", "Crear venta"));
+        permisosAdmin.agregar(new PermisoAtomico("EDITAR_VENTA", "Editar venta"));
         permisosAdmin.agregar(new PermisoAtomico("VER_REPORTES", "Ver reportes"));
         permisosAdmin.agregar(new PermisoAtomico("GESTIONAR_USUARIOS", "Gestionar usuarios"));
         permisosAdmin.agregar(new PermisoAtomico("GESTIONAR_ROLES", "Gestionar roles"));

@@ -5,17 +5,13 @@ import {
     quitarDelCarritoVenta,
     confirmarVenta
 } from "../Controladoras/controladoraVentas";
+import { requiereAlgunPermiso } from "../Middlewares/autenticacion";
 
 const router = Router();
 
-router.get("/", (req: any, res, next) => {
-    const rol = req.usuario?.getRol()?.nombre;
-    if (!["ADMIN", "GERENTE", "EMPLEADO"].includes(rol)) {
-        return res.status(403).send("Acceso denegado");
-    }
+router.use(requiereAlgunPermiso(["CREAR_VENTA", "EDITAR_VENTA"]));
 
-    next();
-}, mostrarVentas);
+router.get("/", mostrarVentas);
 
 router.post("/cart/add", agregarAlCarritoVenta);
 router.post("/cart/remove", quitarDelCarritoVenta);
