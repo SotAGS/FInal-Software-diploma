@@ -434,12 +434,12 @@ async function queryVariacionPreciosCompra() {
                     id_entidad,
                     CAST(COALESCE(
                         JSON_UNQUOTE(JSON_EXTRACT(valor_anterior, '$.precioCompra')),
-                                                JSON_UNQUOTE(JSON_EXTRACT(valor_anterior, '$.precio_compra')),
+                        JSON_UNQUOTE(JSON_EXTRACT(valor_anterior, '$.precio_compra')),
                         JSON_UNQUOTE(JSON_EXTRACT(valor_anterior, '$.precio'))
                     ) AS DECIMAL(10,2)) AS precio_anterior,
                     CAST(COALESCE(
                         JSON_UNQUOTE(JSON_EXTRACT(valor_nuevo, '$.precioCompra')),
-                                                JSON_UNQUOTE(JSON_EXTRACT(valor_nuevo, '$.precio_compra')),
+                        JSON_UNQUOTE(JSON_EXTRACT(valor_nuevo, '$.precio_compra')),
                         JSON_UNQUOTE(JSON_EXTRACT(valor_nuevo, '$.precio'))
                     ) AS DECIMAL(10,2)) AS precio_nuevo
                 FROM auditoria
