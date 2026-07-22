@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS proveedores (
 CREATE TABLE IF NOT EXISTS productos (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(150) NOT NULL,
+    precio_compra DECIMAL(10, 2) NOT NULL,
+    precio_venta DECIMAL(10, 2) NOT NULL,
     precio DECIMAL(10, 2) NOT NULL,
     stock INT NOT NULL DEFAULT 0,
     proveedor_id INT NULL,

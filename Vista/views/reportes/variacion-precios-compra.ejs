@@ -1,10 +1,10 @@
 <div class="reportes-container">
   <h1><%= (typeof nombreLocal !== 'undefined' && nombreLocal) ? nombreLocal : 'Almacen LeVain' %></h1>
-  <h2>Productos Más Vendidos</h2>
-  <p class="subtitle">Ranking de productos vendidos con su marca/proveedor</p>
+  <h2>Variación de Precios de Compra</h2>
+  <p class="subtitle">Productos cuyos precios de compra cambiaron más veces (según auditoría)</p>
 
   <div class="acciones-reporte no-print">
-    <a href="/Reportes/pdf/productos-mas-vendidos" class="btn btn-primary">Descargar PDF</a>
+    <a href="/Reportes/pdf/variacion-precios-compra" class="btn btn-primary">Descargar PDF</a>
   </div>
 
   <% if (error) { %>
@@ -15,19 +15,15 @@
     <div class="stats-summary">
       <div class="stat-card">
         <div class="stat-value"><%= datos.length %></div>
-        <div class="stat-label">Productos en ranking</div>
+        <div class="stat-label">Productos con cambios</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value"><%= datos.reduce((acc, d) => acc + Number(d.unidades_vendidas || 0), 0) %></div>
-        <div class="stat-label">Unidades vendidas</div>
+        <div class="stat-value"><%= datos.reduce((acc, d) => acc + Number(d.cambios_precio_compra || 0), 0) %></div>
+        <div class="stat-label">Cambios de precio</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">$<%= datos.reduce((acc, d) => acc + Number(d.ingresos_totales || 0), 0).toFixed(2) %></div>
-        <div class="stat-label">Ingresos totales</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value"><%= new Set(datos.map(d => d.marca)).size %></div>
-        <div class="stat-label">Marcas</div>
+        <div class="stat-value"><%= Math.max(...datos.map(d => Number(d.precios_compra_distintos || 0))) %></div>
+        <div class="stat-label">Máx. precios distintos</div>
       </div>
     </div>
 
@@ -37,11 +33,11 @@
           <tr>
             <th>#</th>
             <th>Producto</th>
-            <th>Marca</th>
-            <th>Unidades Vendidas</th>
-            <th>Ventas Participadas</th>
-            <th>Recaudación</th>
-            <th>Ingresos Totales</th>
+            <th>Cambios de Precio</th>
+            <th>Precios Distintos</th>
+            <th>Mínimo</th>
+            <th>Máximo</th>
+            <th>Rango</th>
           </tr>
         </thead>
         <tbody>
@@ -49,11 +45,11 @@
             <tr>
               <td><strong><%= index + 1 %></strong></td>
               <td><%= row.producto %></td>
-              <td><%= row.marca %></td>
-              <td class="text-center"><%= Number(row.unidades_vendidas || 0) %></td>
-              <td class="text-center"><%= Number(row.ventas_participadas || 0) %></td>
-              <td class="text-right">$<%= Number(row.recaudacion_producto || 0).toFixed(2) %></td>
-              <td class="text-right">$<%= Number(row.ingresos_totales || 0).toFixed(2) %></td>
+              <td class="text-center"><%= Number(row.cambios_precio_compra || 0) %></td>
+              <td class="text-center"><%= Number(row.precios_compra_distintos || 0) %></td>
+              <td class="text-right">$<%= Number(row.precio_compra_minimo || 0).toFixed(2) %></td>
+              <td class="text-right">$<%= Number(row.precio_compra_maximo || 0).toFixed(2) %></td>
+              <td class="text-right">$<%= Number(row.rango_variacion || 0).toFixed(2) %></td>
             </tr>
           <% }) %>
         </tbody>
@@ -61,11 +57,11 @@
     </div>
 
     <div class="report-section">
-      <h3>Top 10 Productos por Unidades Vendidas</h3>
-      <canvas id="topProductosChart" height="80"></canvas>
+      <h3>Top 10 por cantidad de cambios</h3>
+      <canvas id="chartVariacionPrecios" height="80"></canvas>
     </div>
   <% } else { %>
-    <p class="no-data">No hay ventas registradas para construir este reporte.</p>
+    <p class="no-data">No hay cambios registrados de precio de compra en auditoría todavía.</p>
   <% } %>
 </div>
 
@@ -76,19 +72,19 @@
 
   if (datos.length > 0) {
     const top = datos.slice(0, 10);
-    const ctx = document.getElementById('topProductosChart').getContext('2d');
+    const ctx = document.getElementById('chartVariacionPrecios').getContext('2d');
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const chartTextColor = isDark ? '#e5e7eb' : '#374151';
 
     new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: top.map(x => `${x.producto} (${x.marca})`),
+        labels: top.map(x => x.producto),
         datasets: [{
-          label: 'Unidades vendidas',
-          data: top.map(x => Number(x.unidades_vendidas || 0)),
-          backgroundColor: 'rgba(76, 175, 80, 0.75)',
-          borderColor: 'rgba(46, 125, 50, 1)',
+          label: 'Cantidad de cambios de precio de compra',
+          data: top.map(x => Number(x.cambios_precio_compra || 0)),
+          backgroundColor: 'rgba(255, 152, 0, 0.75)',
+          borderColor: 'rgba(245, 124, 0, 1)',
           borderWidth: 1
         }]
       },
@@ -98,9 +94,7 @@
         maintainAspectRatio: true,
         plugins: {
           legend: {
-            labels: {
-              color: chartTextColor
-            }
+            labels: { color: chartTextColor }
           }
         },
         scales: {

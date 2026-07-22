@@ -118,7 +118,7 @@ export const mostrarVentas = async (req: any, res: Response): Promise<void> => {
             }
 
             const cantidad = Number(item.cantidad || 0);
-            const precioUnitario = Number(producto.getPrecio() || 0);
+            const precioUnitario = Number(producto.getPrecioVenta() || 0);
             return {
                 productoId: item.productoId,
                 nombre: producto.getNombre(),

@@ -276,7 +276,7 @@ export const cerrarOrden = async (req: any, res: Response): Promise<void> => {
         for (const item of orden.items) {
             const p = await repoProducto.buscarPorId(item.productoId);
             if (p) {
-                await repoProducto.modificar(p.getId(), p.getPrecio(), p.getStock() + item.cantidad);
+                await repoProducto.actualizarStock(p.getId(), p.getStock() + item.cantidad);
             }
         }
         orden.cerrar(userId);
@@ -348,7 +348,7 @@ export const guardarFaltantes = async (req: any, res: Response): Promise<void> =
             const cantidadRecibida = item.cantidad - (faltante ? faltante.cantidadFaltante : 0);
             const p = await repoProducto.buscarPorId(item.productoId);
             if (p) {
-                await repoProducto.modificar(p.getId(), p.getPrecio(), p.getStock() + cantidadRecibida);
+                await repoProducto.actualizarStock(p.getId(), p.getStock() + cantidadRecibida);
             }
         }
         

@@ -10,7 +10,9 @@
 
   <input type="text" name="nombre" placeholder="Nombre" value="<%= typeof nombre !== 'undefined' ? nombre : '' %>" required />
 
-  <input type="number" name="precio" placeholder="Precio" value="<%= typeof precio !== 'undefined' ? precio : '' %>" required />
+  <input type="number" step="0.01" name="precioCompra" placeholder="Precio de compra" value="<%= typeof precioCompra !== 'undefined' ? precioCompra : '' %>" required />
+
+  <input type="number" step="0.01" name="precioVenta" placeholder="Precio de venta" value="<%= typeof precioVenta !== 'undefined' ? precioVenta : '' %>" required />
 
   <input type="number" name="stock" placeholder="Stock" value="<%= typeof stock !== 'undefined' ? stock : '' %>" required />
 

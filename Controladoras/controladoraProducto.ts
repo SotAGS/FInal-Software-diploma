@@ -1,9 +1,11 @@
 import { Response } from "express";
 import { RepositorioProducto } from "../Modelo/Repositorios/RepositorioProducto";
 import { RepositorioProveedor } from "../Modelo/Repositorios/RepositorioProveedor";
+import { ServicioAuditoria } from "../Modelo/Servicios/ServicioAuditoria";
 
 const repoProducto = RepositorioProducto.obtenerInstancia();
 const repoProveedor = RepositorioProveedor.obtenerInstancia();
+const servicioAuditoria = ServicioAuditoria.obtenerInstancia();
 
 /* ===========================
    LISTADO
@@ -37,7 +39,8 @@ export const mostrarCrearProducto = async (req: any, res: Response): Promise<voi
         proveedores,
         error: null,
         nombre: "",
-        precio: "",
+        precioCompra: "",
+        precioVenta: "",
         stock: "",
         proveedorId: ""
     });
@@ -63,9 +66,68 @@ export const mostrarEditarProducto = async (req: any, res: Response): Promise<vo
 =========================== */
 export const editarProducto = async (req: any, res: Response): Promise<void> => {
     const id = Number(req.params.id);
-    const { precio, stock } = req.body;
+    const precioCompraRaw = req.body?.precioCompra ?? req.body?.precio_compra ?? req.body?.precio;
+    const precioVentaRaw = req.body?.precioVenta ?? req.body?.precio_venta ?? req.body?.precio;
+    const stockRaw = req.body?.stock;
 
-    await repoProducto.modificar(id, Number(precio), Number(stock));
+    const parseNumeroEstricto = (valor: unknown): number => {
+        if (typeof valor === "number") {
+            return Number.isFinite(valor) ? valor : Number.NaN;
+        }
+
+        if (typeof valor !== "string") {
+            return Number.NaN;
+        }
+
+        const normalizado = valor.trim().replace(",", ".");
+        if (!normalizado) {
+            return Number.NaN;
+        }
+
+        const numero = Number(normalizado);
+        return Number.isFinite(numero) ? numero : Number.NaN;
+    };
+
+    const precioCompraNumero = parseNumeroEstricto(precioCompraRaw);
+    const precioVentaNumero = parseNumeroEstricto(precioVentaRaw);
+    const stockNumero = parseNumeroEstricto(stockRaw);
+
+    if (
+        !Number.isFinite(precioCompraNumero) || precioCompraNumero < 0 ||
+        !Number.isFinite(precioVentaNumero) || precioVentaNumero < 0 ||
+        !Number.isFinite(stockNumero) || stockNumero < 0
+    ) {
+        res.redirect("/inventario/listado?error=Valores invalidos para precio o stock. Verifique que no esten vacios.");
+        return;
+    }
+
+    const productoActual = await repoProducto.buscarPorId(id, true);
+    if (!productoActual) {
+        res.redirect("/inventario/listado?error=Producto no encontrado");
+        return;
+    }
+
+    await repoProducto.modificar(id, precioCompraNumero, precioVentaNumero, stockNumero);
+
+    const usuarioId = Number(req.usuario?.getId?.() ?? req.session?.usuarioId ?? 0);
+    await servicioAuditoria.registrarCambio(
+        "Producto",
+        id,
+        "ACTUALIZAR",
+        Number.isFinite(usuarioId) ? usuarioId : 0,
+        {
+            nombre: productoActual.getNombre(),
+            precioCompra: productoActual.getPrecioCompra(),
+            precioVenta: productoActual.getPrecioVenta(),
+            stock: productoActual.getStock()
+        },
+        {
+            nombre: productoActual.getNombre(),
+            precioCompra: precioCompraNumero,
+            precioVenta: precioVentaNumero,
+            stock: stockNumero
+        }
+    );
 
     res.redirect("/inventario/listado");
 };
@@ -74,16 +136,26 @@ export const editarProducto = async (req: any, res: Response): Promise<void> => 
    CREAR
 =========================== */
 export const crearProducto = async (req: any, res: Response): Promise<void> => {
-    const { nombre, precio, stock, proveedorId } = req.body;
+    const { nombre, precioCompra, precioVenta, stock, proveedorId } = req.body;
     const proveedorIdNumero = Number(proveedorId);
+    const precioCompraNumero = Number(precioCompra);
+    const precioVentaNumero = Number(precioVenta);
+    const stockNumero = Number(stock);
 
-    if (!nombre || !precio || !stock || !Number.isFinite(proveedorIdNumero) || proveedorIdNumero <= 0) {
+    if (
+        !nombre ||
+        !Number.isFinite(precioCompraNumero) || precioCompraNumero < 0 ||
+        !Number.isFinite(precioVentaNumero) || precioVentaNumero < 0 ||
+        !Number.isFinite(stockNumero) || stockNumero < 0 ||
+        !Number.isFinite(proveedorIdNumero) || proveedorIdNumero <= 0
+    ) {
         const proveedores = await repoProveedor.obtenerTodos();
         return res.status(400).render("Inventario/crear", {
             proveedores,
-            error: "Debe completar nombre, precio, stock y proveedor.",
+            error: "Debe completar nombre, precio de compra, precio de venta, stock y proveedor.",
             nombre: nombre || "",
-            precio: precio || "",
+            precioCompra: precioCompra || "",
+            precioVenta: precioVenta || "",
             stock: stock || "",
             proveedorId: proveedorId || ""
         });
@@ -96,7 +168,8 @@ export const crearProducto = async (req: any, res: Response): Promise<void> => {
             proveedores,
             error: "Ya existe un producto activo con ese nombre para ese proveedor.",
             nombre: nombre || "",
-            precio: precio || "",
+            precioCompra: precioCompra || "",
+            precioVenta: precioVenta || "",
             stock: stock || "",
             proveedorId: proveedorId || ""
         });
@@ -105,8 +178,9 @@ export const crearProducto = async (req: any, res: Response): Promise<void> => {
     try {
         await repoProducto.crear(
             nombre,
-            Number(precio),
-            Number(stock),
+            precioCompraNumero,
+            precioVentaNumero,
+            stockNumero,
             proveedorIdNumero
         );
 
@@ -117,7 +191,8 @@ export const crearProducto = async (req: any, res: Response): Promise<void> => {
             proveedores,
             error: (error as any)?.message || "No se pudo crear el producto.",
             nombre: nombre || "",
-            precio: precio || "",
+            precioCompra: precioCompra || "",
+            precioVenta: precioVenta || "",
             stock: stock || "",
             proveedorId: proveedorId || ""
         });

@@ -3,7 +3,8 @@ export class Producto {
     constructor(
         private id: number,
         private nombre: string,
-        private precio: number,
+        private precioCompra: number,
+        private precioVenta: number,
         private stock: number,
         private activo: boolean = true,
         private proveedorId?: number
@@ -17,8 +18,12 @@ export class Producto {
         return this.nombre;
     }
 
-    getPrecio(): number {
-        return this.precio;
+    getPrecioCompra(): number {
+        return this.precioCompra;
+    }
+
+    getPrecioVenta(): number {
+        return this.precioVenta;
     }
 
     getStock(): number {
@@ -37,8 +42,12 @@ export class Producto {
         this.nombre = nombre;
     }
 
-    setPrecio(precio: number): void {
-        this.precio = precio;
+    setPrecioCompra(precioCompra: number): void {
+        this.precioCompra = precioCompra;
+    }
+
+    setPrecioVenta(precioVenta: number): void {
+        this.precioVenta = precioVenta;
     }
 
     setStock(stock: number): void {

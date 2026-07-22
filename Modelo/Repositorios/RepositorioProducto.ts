@@ -13,13 +13,13 @@ export class RepositorioProducto {
         return RepositorioProducto.instancia;
     }
 
-    private async asegurarColumnaProveedorId(): Promise<void> {
+    private async asegurarEsquemaProducto(): Promise<void> {
         if (RepositorioProducto.esquemaVerificado) {
             return;
         }
 
         const pool = getPool();
-        const [rows] = await pool.query<any[]>(
+        const [rowsProveedor] = await pool.query<any[]>(
             `SELECT COUNT(*) AS total
              FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE()
@@ -27,20 +27,62 @@ export class RepositorioProducto {
                AND COLUMN_NAME = 'proveedor_id'`
         );
 
-        const existeColumna = Number((rows as any[])[0]?.total || 0) > 0;
-        if (!existeColumna) {
+        const existeProveedorId = Number((rowsProveedor as any[])[0]?.total || 0) > 0;
+        if (!existeProveedorId) {
             await pool.query(`ALTER TABLE productos ADD COLUMN proveedor_id INT NULL`);
             await pool.query(`ALTER TABLE productos ADD CONSTRAINT fk_productos_proveedor FOREIGN KEY (proveedor_id) REFERENCES proveedores(id) ON DELETE SET NULL`);
         }
+
+        const [rowsPrecioCompra] = await pool.query<any[]>(
+            `SELECT COUNT(*) AS total
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'productos'
+               AND COLUMN_NAME = 'precio_compra'`
+        );
+        const existePrecioCompra = Number((rowsPrecioCompra as any[])[0]?.total || 0) > 0;
+        if (!existePrecioCompra) {
+            await pool.query(`ALTER TABLE productos ADD COLUMN precio_compra DECIMAL(10, 2) NOT NULL DEFAULT 0`);
+        }
+
+        const [rowsPrecioVenta] = await pool.query<any[]>(
+            `SELECT COUNT(*) AS total
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'productos'
+               AND COLUMN_NAME = 'precio_venta'`
+        );
+        const existePrecioVenta = Number((rowsPrecioVenta as any[])[0]?.total || 0) > 0;
+        if (!existePrecioVenta) {
+            await pool.query(`ALTER TABLE productos ADD COLUMN precio_venta DECIMAL(10, 2) NOT NULL DEFAULT 0`);
+        }
+
+        // Migración de compatibilidad: si existía precio único, copiarlo como valor inicial.
+        await pool.query(`
+            UPDATE productos
+            SET
+                precio_compra = CASE
+                    WHEN precio_compra = 0 THEN COALESCE(precio, 0)
+                    ELSE precio_compra
+                END,
+                precio_venta = CASE
+                    WHEN precio_venta = 0 THEN COALESCE(precio, 0)
+                    ELSE precio_venta
+                END
+        `);
 
         RepositorioProducto.esquemaVerificado = true;
     }
 
     private rowToProducto(row: any): Producto {
+        const precioCompra = Number(row.precio_compra ?? row.precio ?? 0);
+        const precioVenta = Number(row.precio_venta ?? row.precio ?? 0);
+
         return new Producto(
             row.id,
             row.nombre,
-            Number(row.precio),
+            precioCompra,
+            precioVenta,
             Number(row.stock),
             Boolean(row.activo),
             row.proveedor_id ? Number(row.proveedor_id) : undefined
@@ -48,24 +90,24 @@ export class RepositorioProducto {
     }
 
     async obtenerTodos(incluirInactivos: boolean = false): Promise<Producto[]> {
-        await this.asegurarColumnaProveedorId();
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
         const whereActivo = incluirInactivos ? "" : "WHERE activo = 1";
-        const [rows] = await pool.query<any[]>(`SELECT id, nombre, precio, stock, activo, proveedor_id FROM productos ${whereActivo} ORDER BY id`);
+        const [rows] = await pool.query<any[]>(`SELECT id, nombre, precio_compra, precio_venta, precio, stock, activo, proveedor_id FROM productos ${whereActivo} ORDER BY id`);
         return rows.map(r => this.rowToProducto(r));
     }
 
     async buscarPorId(id: number, incluirInactivos: boolean = false): Promise<Producto | undefined> {
-        await this.asegurarColumnaProveedorId();
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
         const condicionActivo = incluirInactivos ? "" : "AND activo = 1";
-        const [rows] = await pool.query<any[]>(`SELECT id, nombre, precio, stock, activo, proveedor_id FROM productos WHERE id = ? ${condicionActivo}`, [id]);
+        const [rows] = await pool.query<any[]>(`SELECT id, nombre, precio_compra, precio_venta, precio, stock, activo, proveedor_id FROM productos WHERE id = ? ${condicionActivo}`, [id]);
         if ((rows as any[]).length === 0) return undefined;
         return this.rowToProducto((rows as any[])[0]);
     }
 
-    async crear(nombre: string, precio: number, stock: number, proveedorId?: number): Promise<Producto> {
-        await this.asegurarColumnaProveedorId();
+    async crear(nombre: string, precioCompra: number, precioVenta: number, stock: number, proveedorId?: number): Promise<Producto> {
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
 
         const existeDuplicado = await this.existePorNombreYProveedor(nombre, proveedorId || null);
@@ -73,13 +115,16 @@ export class RepositorioProducto {
             throw new Error("Ya existe un producto activo con ese nombre para el proveedor seleccionado");
         }
 
-        const [result]: any = await pool.execute("INSERT INTO productos (nombre, precio, stock, proveedor_id) VALUES (?, ?, ?, ?)", [nombre, precio, stock, proveedorId || null]);
+        const [result]: any = await pool.execute(
+            "INSERT INTO productos (nombre, precio_compra, precio_venta, precio, stock, proveedor_id) VALUES (?, ?, ?, ?, ?, ?)",
+            [nombre, precioCompra, precioVenta, precioVenta, stock, proveedorId || null]
+        );
         const insertId = result.insertId;
-        return new Producto(insertId, nombre, precio, stock, true, proveedorId);
+        return new Producto(insertId, nombre, precioCompra, precioVenta, stock, true, proveedorId);
     }
 
     async existePorNombreYProveedor(nombre: string, proveedorId: number | null, excluirId?: number): Promise<boolean> {
-        await this.asegurarColumnaProveedorId();
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
         const nombreNormalizado = nombre.trim().toLowerCase();
 
@@ -113,37 +158,49 @@ export class RepositorioProducto {
     }
 
     async eliminar(id: number): Promise<void> {
-        await this.asegurarColumnaProveedorId();
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
         await pool.execute("UPDATE productos SET activo = 0 WHERE id = ?", [id]);
     }
 
     async recuperar(id: number): Promise<void> {
-        await this.asegurarColumnaProveedorId();
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
         await pool.execute("UPDATE productos SET activo = 1 WHERE id = ?", [id]);
     }
 
     async eliminarDefinitivo(id: number): Promise<boolean> {
-        await this.asegurarColumnaProveedorId();
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
         const [result]: any = await pool.execute("DELETE FROM productos WHERE id = ?", [id]);
         return result.affectedRows > 0;
     }
 
-    async modificar(id: number, precio: number, stock: number, proveedorId?: number): Promise<void> {
-        await this.asegurarColumnaProveedorId();
+    async modificar(id: number, precioCompra: number, precioVenta: number, stock: number, proveedorId?: number): Promise<void> {
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
         if (typeof proveedorId === "undefined") {
-            await pool.execute("UPDATE productos SET precio = ?, stock = ? WHERE id = ?", [precio, stock, id]);
+            await pool.execute(
+                "UPDATE productos SET precio_compra = ?, precio_venta = ?, precio = ?, stock = ? WHERE id = ?",
+                [precioCompra, precioVenta, precioVenta, stock, id]
+            );
             return;
         }
 
-        await pool.execute("UPDATE productos SET precio = ?, stock = ?, proveedor_id = ? WHERE id = ?", [precio, stock, proveedorId || null, id]);
+        await pool.execute(
+            "UPDATE productos SET precio_compra = ?, precio_venta = ?, precio = ?, stock = ?, proveedor_id = ? WHERE id = ?",
+            [precioCompra, precioVenta, precioVenta, stock, proveedorId || null, id]
+        );
+    }
+
+    async actualizarStock(id: number, stock: number): Promise<void> {
+        await this.asegurarEsquemaProducto();
+        const pool = getPool();
+        await pool.execute("UPDATE productos SET stock = ? WHERE id = ?", [stock, id]);
     }
 
     async asignarProveedorAProductos(proveedorId: number, productoIds: number[]): Promise<void> {
-        await this.asegurarColumnaProveedorId();
+        await this.asegurarEsquemaProducto();
         const pool = getPool();
         const conn = await pool.getConnection();
 

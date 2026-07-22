@@ -55,6 +55,7 @@ export type ReportePdfKey =
   | "rotacion-inventario"
   | "auditoria-accesos"
   | "productos-mas-vendidos"
+  | "variacion-precios-compra"
   | "busqueda-ordenes-fecha"
   | "resumen-ventas-mensual";
 
@@ -63,6 +64,7 @@ const rutasReporte: Record<ReportePdfKey, string> = {
   "rotacion-inventario": "/Reportes/rotacion-inventario",
   "auditoria-accesos": "/Reportes/auditoria-accesos",
   "productos-mas-vendidos": "/Reportes/productos-mas-vendidos",
+  "variacion-precios-compra": "/Reportes/variacion-precios-compra",
   "busqueda-ordenes-fecha": "/Reportes/busqueda-ordenes-fecha",
   "resumen-ventas-mensual": "/Reportes/resumen-ventas-mensual"
 };

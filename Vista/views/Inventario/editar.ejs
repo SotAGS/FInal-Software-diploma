@@ -1,5 +1,19 @@
 <h1>Editar Producto</h1>
 
+<%
+  const precioCompraActual = (typeof producto.getPrecioCompra === 'function')
+    ? producto.getPrecioCompra()
+    : ((typeof producto.getPrecio === 'function')
+      ? producto.getPrecio()
+      : (producto.precioCompra ?? producto.precio_compra ?? producto.precio ?? 0));
+
+  const precioVentaActual = (typeof producto.getPrecioVenta === 'function')
+    ? producto.getPrecioVenta()
+    : ((typeof producto.getPrecio === 'function')
+      ? producto.getPrecio()
+      : (producto.precioVenta ?? producto.precio_venta ?? producto.precio ?? 0));
+%>
+
 <form method="POST" action="/inventario/editar/<%= producto.getId() %>">
 
   <div>
@@ -8,8 +22,13 @@
   </div>
 
   <div>
-    <label>Precio</label>
-    <input type="number" step="0.01" name="precio" value="<%= producto.getPrecio() %>" required />
+    <label>Precio de compra</label>
+    <input type="number" step="0.01" name="precioCompra" value="<%= Number(precioCompraActual || 0).toFixed(2) %>" required />
+  </div>
+
+  <div>
+    <label>Precio de venta</label>
+    <input type="number" step="0.01" name="precioVenta" value="<%= Number(precioVentaActual || 0).toFixed(2) %>" required />
   </div>
 
   <div>

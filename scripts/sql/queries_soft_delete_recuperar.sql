@@ -38,12 +38,12 @@ WHERE id = 3;
 -- ==============================
 
 -- Ver todos (activos e inactivos)
-SELECT id, nombre, precio, stock, activo, fecha_creacion
+SELECT id, nombre, precio_compra, precio_venta, stock, activo, fecha_creacion
 FROM productos
 ORDER BY id;
 
 -- Ver solo eliminados
-SELECT id, nombre, precio, stock, activo
+SELECT id, nombre, precio_compra, precio_venta, stock, activo
 FROM productos
 WHERE activo = FALSE
 ORDER BY id;

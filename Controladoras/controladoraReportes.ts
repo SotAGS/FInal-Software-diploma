@@ -162,8 +162,9 @@ async function queryRotacionInventario() {
             p.id,
             p.nombre,
             p.stock,
-            p.precio,
-            ROUND(p.stock * p.precio, 2) as valor_inventario,
+            p.precio_venta as precio,
+            p.precio_compra,
+            ROUND(p.stock * p.precio_compra, 2) as valor_inventario,
             CASE 
                 WHEN p.stock < 10 THEN 'CRÍTICO'
                 WHEN p.stock < 50 THEN 'BAJO'
@@ -208,6 +209,28 @@ export const mostrarProductosMasVendidos = async (req: any, res: Response): Prom
     } catch (error) {
         console.error(error);
         renderizarReporte(req, res, "productos-mas-vendidos", { datos: [], error: "Error cargando reporte", nombreLocal: NOMBRE_LOCAL });
+    }
+};
+
+/**
+ * REPORTE 6: Variación de precios de compra
+ * Productos con más cambios de precio de compra registrados en auditoría.
+ */
+export const mostrarVariacionPreciosCompra = async (req: any, res: Response): Promise<void> => {
+    try {
+        const datos = await queryVariacionPreciosCompra();
+        renderizarReporte(req, res, "variacion-precios-compra", {
+            datos,
+            error: null,
+            nombreLocal: NOMBRE_LOCAL
+        });
+    } catch (error) {
+        console.error(error);
+        renderizarReporte(req, res, "variacion-precios-compra", {
+            datos: [],
+            error: "Error cargando reporte",
+            nombreLocal: NOMBRE_LOCAL
+        });
     }
 };
 
@@ -260,6 +283,15 @@ export const obtenerProductosMasVendidos = async (req: any, res: Response): Prom
     }
 };
 
+export const obtenerVariacionPreciosCompra = async (req: any, res: Response): Promise<void> => {
+    try {
+        const datos = await queryVariacionPreciosCompra();
+        res.json(datos);
+    } catch (error) {
+        res.json({ error: (error as any).message });
+    }
+};
+
 export const obtenerAuditoriaAccesos = async (req: any, res: Response): Promise<void> => {
     try {
         const datos = await queryAuditoriaAccesos();
@@ -277,6 +309,7 @@ export const descargarReportePdf = async (req: Request, res: Response): Promise<
             "rotacion-inventario",
             "auditoria-accesos",
             "productos-mas-vendidos",
+            "variacion-precios-compra",
             "busqueda-ordenes-fecha",
             "resumen-ventas-mensual"
         ];
@@ -364,6 +397,7 @@ async function queryProductosMasVendidos() {
             p.nombre AS producto,
             COALESCE(pr.nombre, 'Sin marca/proveedor') AS marca,
             SUM(vi.cantidad) AS unidades_vendidas,
+            ROUND(SUM(vi.subtotal), 2) AS recaudacion_producto,
             ROUND(SUM(vi.subtotal), 2) AS ingresos_totales,
             COUNT(DISTINCT v.id) AS ventas_participadas
         FROM ventas_items vi
@@ -373,5 +407,58 @@ async function queryProductosMasVendidos() {
         GROUP BY p.id, p.nombre, pr.nombre
         ORDER BY unidades_vendidas DESC, ingresos_totales DESC, p.nombre ASC
     `);
+    return rows;
+}
+
+async function queryVariacionPreciosCompra() {
+    const pool = getPool();
+
+    const [rows] = await pool.query(`
+        SELECT
+            cambios.producto_id,
+            COALESCE(p.nombre, CONCAT('Producto #', cambios.producto_id)) AS producto,
+            cambios.cambios_precio_compra,
+            cambios.precios_compra_distintos,
+            cambios.precio_compra_minimo,
+            cambios.precio_compra_maximo,
+            ROUND(cambios.precio_compra_maximo - cambios.precio_compra_minimo, 2) AS rango_variacion
+        FROM (
+            SELECT
+                a.id_entidad AS producto_id,
+                COUNT(*) AS cambios_precio_compra,
+                COUNT(DISTINCT a.precio_nuevo) AS precios_compra_distintos,
+                MIN(a.precio_nuevo) AS precio_compra_minimo,
+                MAX(a.precio_nuevo) AS precio_compra_maximo
+            FROM (
+                SELECT
+                    id_entidad,
+                    CAST(COALESCE(
+                        JSON_UNQUOTE(JSON_EXTRACT(valor_anterior, '$.precioCompra')),
+                                                JSON_UNQUOTE(JSON_EXTRACT(valor_anterior, '$.precio_compra')),
+                        JSON_UNQUOTE(JSON_EXTRACT(valor_anterior, '$.precio'))
+                    ) AS DECIMAL(10,2)) AS precio_anterior,
+                    CAST(COALESCE(
+                        JSON_UNQUOTE(JSON_EXTRACT(valor_nuevo, '$.precioCompra')),
+                                                JSON_UNQUOTE(JSON_EXTRACT(valor_nuevo, '$.precio_compra')),
+                        JSON_UNQUOTE(JSON_EXTRACT(valor_nuevo, '$.precio'))
+                    ) AS DECIMAL(10,2)) AS precio_nuevo
+                FROM auditoria
+                                WHERE entidad IN ('Producto', 'PRODUCTO', 'producto', 'productos')
+                                    AND accion IN ('ACTUALIZAR', 'EDITAR')
+                  AND id_entidad IS NOT NULL
+                  AND JSON_VALID(valor_nuevo)
+            ) a
+            WHERE a.precio_nuevo IS NOT NULL
+              AND (a.precio_anterior IS NULL OR a.precio_anterior <> a.precio_nuevo)
+            GROUP BY a.id_entidad
+        ) cambios
+        LEFT JOIN productos p ON p.id = cambios.producto_id
+        ORDER BY
+            cambios.precios_compra_distintos DESC,
+            cambios.cambios_precio_compra DESC,
+            rango_variacion DESC,
+            producto ASC
+    `);
+
     return rows;
 }

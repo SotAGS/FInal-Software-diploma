@@ -178,7 +178,7 @@ export class RepositorioVenta {
 
             for (const item of itemsSolicitados) {
                 const [rows] = await conexion.query<any[]>(
-                    `SELECT id, nombre, precio, stock, activo
+                    `SELECT id, nombre, precio_venta, precio, stock, activo
                      FROM productos
                      WHERE id = ?
                      FOR UPDATE`,
@@ -201,7 +201,7 @@ export class RepositorioVenta {
                     throw new Error(`Stock insuficiente para ${producto.nombre}. Disponible: ${stockActual}.`);
                 }
 
-                const precioUnitario = Number(producto.precio || 0);
+                const precioUnitario = Number(producto.precio_venta ?? producto.precio ?? 0);
                 const subtotal = precioUnitario * cantidadSolicitada;
                 totalVenta += subtotal;
 

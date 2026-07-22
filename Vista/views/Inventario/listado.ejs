@@ -3,6 +3,25 @@
 <% const puedeEditar = usuario && usuario.puede("EDITAR_PRODUCTO"); %>
 <% const puedeEliminar = usuario && usuario.puede("ELIMINAR_PRODUCTO"); %>
 <% const puedeCrear = usuario && usuario.puede("CREAR_PRODUCTO"); %>
+<%
+  const obtenerPrecioCompra = (p) => {
+    if (typeof p.getPrecioCompra === 'function') return p.getPrecioCompra();
+    if (typeof p.getPrecio === 'function') return p.getPrecio();
+    if (typeof p.precioCompra !== 'undefined') return p.precioCompra;
+    if (typeof p.precio_compra !== 'undefined') return p.precio_compra;
+    if (typeof p.precio !== 'undefined') return p.precio;
+    return 0;
+  };
+
+  const obtenerPrecioVenta = (p) => {
+    if (typeof p.getPrecioVenta === 'function') return p.getPrecioVenta();
+    if (typeof p.getPrecio === 'function') return p.getPrecio();
+    if (typeof p.precioVenta !== 'undefined') return p.precioVenta;
+    if (typeof p.precio_venta !== 'undefined') return p.precio_venta;
+    if (typeof p.precio !== 'undefined') return p.precio;
+    return 0;
+  };
+%>
 
 <% if (success) { %>
   <div class="alert-success"><%= success %></div>
@@ -23,7 +42,8 @@
   <table>
     <tr>
       <th>Nombre</th>
-      <th>Precio</th>
+      <th>Precio compra</th>
+      <th>Precio venta</th>
       <th>Stock</th>
       <th>Proveedor</th>
       <% if (puedeEditar || puedeEliminar) { %>
@@ -34,7 +54,8 @@
     <% productosActivos.forEach(function(p) { %>
       <tr data-producto-row data-search="<%= (p.getNombre() + ' ' + (p.getProveedorId() ? (proveedoresMap[p.getProveedorId()] || ('#' + p.getProveedorId())) : 'sin proveedor')).toLowerCase() %>">
         <td><%= p.getNombre() %></td>
-        <td>$<%= p.getPrecio() %></td>
+        <td>$<%= Number(obtenerPrecioCompra(p) || 0).toFixed(2) %></td>
+        <td>$<%= Number(obtenerPrecioVenta(p) || 0).toFixed(2) %></td>
         <td><%= p.getStock() %></td>
         <td><%= p.getProveedorId() ? (proveedoresMap[p.getProveedorId()] || ('#'+p.getProveedorId())) : 'Sin proveedor' %></td>
 
@@ -70,7 +91,8 @@
   <table>
     <tr>
       <th>Nombre</th>
-      <th>Precio</th>
+      <th>Precio compra</th>
+      <th>Precio venta</th>
       <th>Stock</th>
       <th>Proveedor</th>
       <% if (puedeEliminar) { %>
@@ -81,7 +103,8 @@
     <% productosEliminados.forEach(function(p) { %>
       <tr data-producto-row data-search="<%= (p.getNombre() + ' ' + (p.getProveedorId() ? (proveedoresMap[p.getProveedorId()] || ('#' + p.getProveedorId())) : 'sin proveedor')).toLowerCase() %>">
         <td><%= p.getNombre() %></td>
-        <td>$<%= p.getPrecio() %></td>
+        <td>$<%= Number(obtenerPrecioCompra(p) || 0).toFixed(2) %></td>
+        <td>$<%= Number(obtenerPrecioVenta(p) || 0).toFixed(2) %></td>
         <td><%= p.getStock() %></td>
         <td><%= p.getProveedorId() ? (proveedoresMap[p.getProveedorId()] || ('#'+p.getProveedorId())) : 'Sin proveedor' %></td>
         <% if (puedeEliminar) { %>

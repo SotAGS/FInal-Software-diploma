@@ -2,6 +2,7 @@ import { getPool } from "../../config/database";
 
 export class ServicioAuditoria {
   private static instancia: ServicioAuditoria;
+  private auditoriaTieneReferencia: boolean | null = null;
   private loginLogoutConfig:
     | {
         campoTipo: "tipo" | "tipo_evento";
@@ -17,6 +18,50 @@ export class ServicioAuditoria {
       ServicioAuditoria.instancia = new ServicioAuditoria();
     }
     return ServicioAuditoria.instancia;
+  }
+
+  private async obtenerConfigAuditoria(): Promise<{ tieneReferencia: boolean }> {
+    if (this.auditoriaTieneReferencia !== null) {
+      return { tieneReferencia: this.auditoriaTieneReferencia };
+    }
+
+    const pool = getPool();
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS auditoria (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        entidad VARCHAR(100) NOT NULL,
+        id_entidad INT,
+        accion VARCHAR(100) NOT NULL,
+        usuario_id INT,
+        fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        valor_anterior LONGTEXT,
+        valor_nuevo LONGTEXT,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+      )
+    `);
+
+    const [columnRows] = await pool.query<any[]>(
+      `SELECT COLUMN_NAME
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'auditoria'`
+    );
+
+    const columnas = new Set((columnRows as any[]).map((row: any) => String(row.COLUMN_NAME)));
+
+    if (!columnas.has("referencia")) {
+      try {
+        await pool.query(`ALTER TABLE auditoria ADD COLUMN referencia VARCHAR(255) NULL`);
+        columnas.add("referencia");
+      } catch (error) {
+        // Si no se puede alterar por permisos/versionado, seguimos sin esa columna.
+        console.warn("[AUDITORIA] No se pudo agregar columna referencia:", (error as any)?.message || error);
+      }
+    }
+
+    this.auditoriaTieneReferencia = columnas.has("referencia");
+    return { tieneReferencia: this.auditoriaTieneReferencia };
   }
 
   private async obtenerConfigLoginLogout(): Promise<{
@@ -85,14 +130,23 @@ export class ServicioAuditoria {
   ): Promise<void> {
     try {
       const pool = getPool();
+      const cfgAuditoria = await this.obtenerConfigAuditoria();
       const valorAntJSON = valorAnterior ? JSON.stringify(valorAnterior) : null;
       const valorNuevoJSON = valorNuevo ? JSON.stringify(valorNuevo) : null;
 
-      await pool.query(
-        `INSERT INTO auditoria (entidad, id_entidad, accion, usuario_id, valor_anterior, valor_nuevo, referencia)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [entidad, idEntidad, accion, idUsuario, valorAntJSON, valorNuevoJSON, referencia || null]
-      );
+      if (cfgAuditoria.tieneReferencia) {
+        await pool.query(
+          `INSERT INTO auditoria (entidad, id_entidad, accion, usuario_id, valor_anterior, valor_nuevo, referencia)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [entidad, idEntidad, accion, idUsuario, valorAntJSON, valorNuevoJSON, referencia || null]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO auditoria (entidad, id_entidad, accion, usuario_id, valor_anterior, valor_nuevo)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [entidad, idEntidad, accion, idUsuario, valorAntJSON, valorNuevoJSON]
+        );
+      }
 
       console.log(`✅ [AUDITORÍA] ${accion} en ${entidad} #${idEntidad}`);
     } catch (error) {

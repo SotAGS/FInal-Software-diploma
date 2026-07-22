@@ -1,5 +1,16 @@
 <h1>Ventas a Clientes</h1>
 
+<%
+  const obtenerPrecioVenta = (p) => {
+    if (typeof p.getPrecioVenta === 'function') return p.getPrecioVenta();
+    if (typeof p.getPrecio === 'function') return p.getPrecio();
+    if (typeof p.precioVenta !== 'undefined') return p.precioVenta;
+    if (typeof p.precio_venta !== 'undefined') return p.precio_venta;
+    if (typeof p.precio !== 'undefined') return p.precio;
+    return 0;
+  };
+%>
+
 <% if (typeof session !== 'undefined' && session.message) { %>
   <% const esErrorMensaje = /(insuficiente|no se pudo|debe|no existe|vacio|invál|inval)/i.test(session.message); %>
   <div class="alert <%= esErrorMensaje ? 'alert-error' : 'alert-success' %>"><%= session.message %></div>
@@ -19,7 +30,7 @@
       <select name="productoId" id="selectProductosVenta" size="10" class="select-productos">
         <% productos.forEach(function(p){ %>
           <option value="<%= p.getId() %>" data-search="<%= p.getNombre().toLowerCase() %>">
-            <%= p.getNombre() %> - $<%= p.getPrecio() %> (stock: <%= p.getStock() %>)
+            <%= p.getNombre() %> - venta: $<%= Number(obtenerPrecioVenta(p) || 0).toFixed(2) %> (stock: <%= p.getStock() %>)
           </option>
         <% }) %>
       </select>

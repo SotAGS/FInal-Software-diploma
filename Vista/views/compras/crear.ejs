@@ -1,5 +1,16 @@
 <h1>Crear Orden de Compra</h1>
 
+<%
+  const obtenerPrecioCompra = (p) => {
+    if (typeof p.getPrecioCompra === 'function') return p.getPrecioCompra();
+    if (typeof p.getPrecio === 'function') return p.getPrecio();
+    if (typeof p.precioCompra !== 'undefined') return p.precioCompra;
+    if (typeof p.precio_compra !== 'undefined') return p.precio_compra;
+    if (typeof p.precio !== 'undefined') return p.precio;
+    return 0;
+  };
+%>
+
 <% if (typeof error !== 'undefined' && error) { %>
   <div style="margin: 10px 0; padding: 10px; border: 1px solid #ef9a9a; background: #ffebee; color: #b71c1c; border-radius: 6px;">
     <%= error %>
@@ -22,7 +33,7 @@
               ? proveedoresMap[p.getProveedorId()].getNombre()
               : 'Sin proveedor'; %>
           <option value="<%= p.getId() %>" data-search="<%= (p.getNombre() + ' ' + proveedorNombre).toLowerCase() %>">
-            <%= p.getNombre() %> - $<%= p.getPrecio() %> (stock: <%= p.getStock() %>)
+            <%= p.getNombre() %> - compra: $<%= Number(obtenerPrecioCompra(p) || 0).toFixed(2) %> (stock: <%= p.getStock() %>)
             - Proveedor: <%= proveedorNombre %>
           </option>
         <% }) %>
