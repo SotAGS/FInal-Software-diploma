@@ -116,6 +116,20 @@ export class ServicioAuditoria {
     return this.loginLogoutConfig;
   }
 
+  private async normalizarUsuarioIdParaAuditoria(idUsuario: number): Promise<number | null> {
+    if (!Number.isFinite(idUsuario) || idUsuario <= 0) {
+      return null;
+    }
+
+    const pool = getPool();
+    const [rows] = await pool.query<any[]>(
+      `SELECT id FROM usuarios WHERE id = ? LIMIT 1`,
+      [idUsuario]
+    );
+
+    return (rows as any[]).length > 0 ? idUsuario : null;
+  }
+
   /**
    * Registra un cambio en la auditoría
    */
@@ -133,18 +147,19 @@ export class ServicioAuditoria {
       const cfgAuditoria = await this.obtenerConfigAuditoria();
       const valorAntJSON = valorAnterior ? JSON.stringify(valorAnterior) : null;
       const valorNuevoJSON = valorNuevo ? JSON.stringify(valorNuevo) : null;
+      const usuarioIdAuditable = await this.normalizarUsuarioIdParaAuditoria(idUsuario);
 
       if (cfgAuditoria.tieneReferencia) {
         await pool.query(
           `INSERT INTO auditoria (entidad, id_entidad, accion, usuario_id, valor_anterior, valor_nuevo, referencia)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [entidad, idEntidad, accion, idUsuario, valorAntJSON, valorNuevoJSON, referencia || null]
+          [entidad, idEntidad, accion, usuarioIdAuditable, valorAntJSON, valorNuevoJSON, referencia || null]
         );
       } else {
         await pool.query(
           `INSERT INTO auditoria (entidad, id_entidad, accion, usuario_id, valor_anterior, valor_nuevo)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [entidad, idEntidad, accion, idUsuario, valorAntJSON, valorNuevoJSON]
+          [entidad, idEntidad, accion, usuarioIdAuditable, valorAntJSON, valorNuevoJSON]
         );
       }
 

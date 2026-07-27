@@ -444,7 +444,7 @@ async function queryVariacionPreciosCompra() {
                     ) AS DECIMAL(10,2)) AS precio_nuevo
                 FROM auditoria
                                 WHERE entidad IN ('Producto', 'PRODUCTO', 'producto', 'productos')
-                                    AND accion IN ('ACTUALIZAR', 'EDITAR')
+                                    AND accion NOT IN ('CREAR', 'ELIMINAR', 'RECUPERAR', 'ELIMINAR_DEFINITIVO')
                   AND id_entidad IS NOT NULL
                   AND JSON_VALID(valor_nuevo)
             ) a
