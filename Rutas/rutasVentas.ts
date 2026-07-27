@@ -3,7 +3,8 @@ import {
     mostrarVentas,
     agregarAlCarritoVenta,
     quitarDelCarritoVenta,
-    confirmarVenta
+    confirmarVenta,
+    mostrarTicketVenta
 } from "../Controladoras/controladoraVentas";
 import { requiereAlgunPermiso } from "../Middlewares/autenticacion";
 
@@ -16,5 +17,6 @@ router.get("/", mostrarVentas);
 router.post("/cart/add", agregarAlCarritoVenta);
 router.post("/cart/remove", quitarDelCarritoVenta);
 router.post("/confirmar", confirmarVenta);
+router.get("/:ventaId/ticket", mostrarTicketVenta);
 
 export default router;

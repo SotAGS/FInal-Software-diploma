@@ -146,6 +146,7 @@ export const mostrarVentas = async (req: any, res: Response): Promise<void> => {
             modo: filtroVentas.modo
         },
         errorFiltroVentas: filtroVentas.error,
+        ultimaVentaId: Number(req.session?.ultimaVentaId) || null,
         session: req.session
     });
 };
@@ -246,6 +247,7 @@ export const confirmarVenta = async (req: any, res: Response): Promise<void> => 
         );
 
         req.session[CLAVE_CARRITO_VENTAS] = [];
+        req.session.ultimaVentaId = venta.getId();
         req.session.message = `Venta #${venta.getId()} registrada por $${Number(venta.getTotal()).toFixed(2)}.`;
         req.session.save((err: any) => {
             if (err) {
@@ -256,6 +258,35 @@ export const confirmarVenta = async (req: any, res: Response): Promise<void> => 
     } catch (error) {
         console.error("Error al confirmar venta:", error);
         req.session.message = (error as any)?.message || "No se pudo confirmar la venta.";
+        res.redirect("/Ventas");
+    }
+};
+
+export const mostrarTicketVenta = async (req: any, res: Response): Promise<void> => {
+    const ventaId = Number(req.params?.ventaId);
+
+    if (!Number.isFinite(ventaId) || ventaId <= 0) {
+        req.session.message = "El ID de la venta no es valido para generar ticket.";
+        return res.redirect("/Ventas");
+    }
+
+    try {
+        const detalleVenta = await repoVenta.obtenerDetallePorId(ventaId);
+
+        if (!detalleVenta) {
+            req.session.message = `No existe la venta #${ventaId}.`;
+            return res.redirect("/Ventas");
+        }
+
+        res.render("ventas/ticket", {
+            titulo: `Ticket venta #${ventaId}`,
+            venta: detalleVenta.venta,
+            itemsDetalle: detalleVenta.itemsDetalle,
+            session: req.session
+        });
+    } catch (error) {
+        console.error("Error al mostrar ticket de venta:", error);
+        req.session.message = "No se pudo generar el ticket de pago.";
         res.redirect("/Ventas");
     }
 };

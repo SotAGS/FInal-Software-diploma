@@ -17,6 +17,10 @@ export interface ResumenVentasMensual {
     cantidadProductoMasVendido: number;
 }
 
+export interface VentaItemDetalle extends VentaItem {
+    productoNombre: string;
+}
+
 export class RepositorioVenta {
     private static instancia: RepositorioVenta;
     private tablasVerificadas = false;
@@ -159,6 +163,57 @@ export class RepositorioVenta {
                 cantidadProductoMasVendido: top ? Number(top.cantidad || 0) : 0
             };
         });
+    }
+
+    public async obtenerDetallePorId(ventaId: number): Promise<{ venta: Venta; itemsDetalle: VentaItemDetalle[] } | null> {
+        const pool = getPool();
+        await this.asegurarTablas(pool);
+
+        const [ventasRows] = await pool.query<any[]>(
+            `SELECT id, cliente_nombre, usuario_vendedor_id, total, fecha_creacion
+             FROM ventas
+             WHERE id = ?
+             LIMIT 1`,
+            [ventaId]
+        );
+
+        const ventaRow = (ventasRows as any[])[0];
+        if (!ventaRow) {
+            return null;
+        }
+
+        const [itemsRows] = await pool.query<any[]>(
+            `SELECT vi.producto_id, vi.cantidad, vi.precio_unitario, vi.subtotal, p.nombre AS producto_nombre
+             FROM ventas_items vi
+             LEFT JOIN productos p ON p.id = vi.producto_id
+             WHERE vi.venta_id = ?
+             ORDER BY vi.id`,
+            [ventaId]
+        );
+
+        const itemsDetalle: VentaItemDetalle[] = (itemsRows as any[]).map((row: any) => ({
+            productoId: Number(row.producto_id),
+            cantidad: Number(row.cantidad),
+            precioUnitario: Number(row.precio_unitario),
+            subtotal: Number(row.subtotal),
+            productoNombre: String(row.producto_nombre || `Producto #${Number(row.producto_id)}`)
+        }));
+
+        const venta = new Venta(
+            Number(ventaRow.id),
+            String(ventaRow.cliente_nombre || "Consumidor final"),
+            Number(ventaRow.total || 0),
+            itemsDetalle.map(item => ({
+                productoId: item.productoId,
+                cantidad: item.cantidad,
+                precioUnitario: item.precioUnitario,
+                subtotal: item.subtotal
+            })),
+            ventaRow.usuario_vendedor_id ? Number(ventaRow.usuario_vendedor_id) : undefined,
+            ventaRow.fecha_creacion ? new Date(ventaRow.fecha_creacion) : undefined
+        );
+
+        return { venta, itemsDetalle };
     }
 
     public async crear(clienteNombre: string, itemsSolicitados: { productoId: number; cantidad: number }[], usuarioVendedorId?: number): Promise<Venta> {

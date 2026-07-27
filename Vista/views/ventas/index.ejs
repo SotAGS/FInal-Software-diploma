@@ -48,6 +48,9 @@
       <% if (!cart || !cart.length) { %>
         <small class="ventas-ayuda">Agregá al menos un producto para confirmar la venta.</small>
       <% } %>
+      <% if (ultimaVentaId) { %>
+        <a href="/Ventas/<%= ultimaVentaId %>/ticket" class="btn-ticket-link">Generar ticket de la ultima venta (#<%= ultimaVentaId %>)</a>
+      <% } %>
     </form>
   </div>
 
@@ -135,9 +138,10 @@
     <th>Cliente</th>
     <th>Total</th>
     <th>Detalle</th>
+    <th>Ticket</th>
   </tr>
   <% if (!ventas || !ventas.length) { %>
-    <tr><td colspan="5">No hay ventas registradas.</td></tr>
+    <tr><td colspan="6">No hay ventas registradas.</td></tr>
   <% } else { %>
     <% ventas.forEach(function(v){ %>
       <tr>
@@ -152,6 +156,9 @@
               return nombre + ' x ' + it.cantidad;
             }).join(' | '); %>
           <%= detalle || '-' %>
+        </td>
+        <td>
+          <a href="/Ventas/<%= v.getId() %>/ticket" class="btn-ticket-link">Generar ticket</a>
         </td>
       </tr>
     <% }) %>
@@ -331,10 +338,69 @@
   .btn-secondary-link {
     display: inline-block;
     text-decoration: none;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid #cbd5e1;
     border-radius: 6px;
     padding: 8px 12px;
+    color: #1f2937;
+    background: #f8fafc;
+    font-weight: 600;
+  }
+
+  .btn-secondary-link:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+  }
+
+  .btn-ticket-link {
+    display: inline-block;
+    text-decoration: none;
+    border: 1px solid #2e7d32;
+    border-radius: 6px;
+    padding: 8px 12px;
+    background: #e8f5e9;
+    color: #1b5e20;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .btn-ticket-link:hover {
+    background: #dff0e1;
+  }
+
+  .form-confirmar-venta .btn-success:disabled {
+    background: #e2e8f0;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    cursor: not-allowed;
+    opacity: 1;
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] .btn-secondary-link {
+    border-color: rgba(255, 255, 255, 0.2);
     color: inherit;
+    background: transparent;
+  }
+
+  html[data-theme="dark"] .btn-secondary-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.32);
+  }
+
+  html[data-theme="dark"] .btn-ticket-link {
+    border-color: rgba(56, 142, 60, 0.9);
+    background: rgba(56, 142, 60, 0.2);
+    color: #dcedc8;
+  }
+
+  html[data-theme="dark"] .btn-ticket-link:hover {
+    background: rgba(56, 142, 60, 0.32);
+  }
+
+  html[data-theme="dark"] .form-confirmar-venta .btn-success:disabled {
+    background: #1f2937;
+    color: #94a3b8;
+    border-color: #334155;
   }
 
   .label-cantidad {
