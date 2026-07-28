@@ -365,6 +365,8 @@ export const login = async (req: any, res: Response): Promise<void> => {
 
     // ADMIN HARDCODEADO
     if (email === 'admin@empresa.com' && password === 'admin123') {
+        const servicio = ServicioAuditoria.obtenerInstancia();
+        await servicio.registrarLogin(-1, email);
         req.session.usuarioId = -1; // ID especial para admin hardcodeado
         req.session.isHardcodedAdmin = true;
         return res.redirect("/");
@@ -423,7 +425,7 @@ export const login = async (req: any, res: Response): Promise<void> => {
 export const logout = async (req: any, res: Response): Promise<void> => {
     if (req.usuario) {
         const servicio = ServicioAuditoria.obtenerInstancia();
-        await servicio.registrarLogout(req.usuario.getId());
+        await servicio.registrarLogout(req.usuario.getId(), req.usuario.getEmail?.());
     }
 
     req.session.destroy((err: any) => {

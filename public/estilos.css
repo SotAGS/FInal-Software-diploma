@@ -464,6 +464,14 @@ html[data-theme="dark"] .reportes-container .stat-value {
   color: var(--app-text) !important;
 }
 
+html[data-theme="dark"] .reportes-container .report-table tbody tr {
+  background-color: var(--surface-2) !important;
+}
+
+html[data-theme="dark"] .reportes-container .report-table tbody tr:nth-child(even) {
+  background-color: var(--table-even) !important;
+}
+
 html[data-theme="dark"] .reportes-container .report-table tbody tr:hover {
   background-color: var(--table-even) !important;
 }

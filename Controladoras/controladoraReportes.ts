@@ -369,24 +369,101 @@ async function queryAuditoriaAccesos() {
     );
 
     const columnas = new Set((columnRows as any[]).map((row: any) => String(row.COLUMN_NAME)));
-    const campoTipo = columnas.has("tipo") ? "tipo" : "tipo_evento";
-    const campoFecha = columnas.has("fecha_hora") ? "fecha_hora" : "fecha";
+    const tieneTipo = columnas.has("tipo");
+    const tieneTipoEvento = columnas.has("tipo_evento");
+    const tieneFechaHora = columnas.has("fecha_hora");
+    const tieneFecha = columnas.has("fecha");
+    const tieneEmail = columnas.has("email");
+    const tieneDetalle = columnas.has("detalle");
+
+    const tipoBaseExpr = tieneTipo && tieneTipoEvento
+        ? `COALESCE(NULLIF(TRIM(ll.tipo), ''), NULLIF(TRIM(ll.tipo_evento), ''))`
+        : tieneTipo
+            ? `NULLIF(TRIM(ll.tipo), '')`
+            : `NULLIF(TRIM(ll.tipo_evento), '')`;
+    const fechaBaseExpr = tieneFechaHora && tieneFecha
+        ? `COALESCE(ll.fecha_hora, ll.fecha)`
+        : tieneFechaHora
+            ? `ll.fecha_hora`
+            : `ll.fecha`;
+
+    const tipoNormalizadoExpr = `UPPER(TRIM(COALESCE(${tipoBaseExpr}, ''))) `;
+    const emailDesdeDetalleExpr = tieneDetalle
+        ? `CASE WHEN ll.detalle LIKE 'EMAIL:%' THEN TRIM(SUBSTRING(ll.detalle, 7)) ELSE NULL END`
+        : `NULL`;
+    const emailNormalizadoExpr = tieneEmail
+        ? `COALESCE(
+            u.email,
+            NULLIF(TRIM(ll.email), ''),
+            ${emailDesdeDetalleExpr},
+            CASE WHEN ${tipoNormalizadoExpr} LIKE 'LOGOUT%' AND ll.usuario_id IS NULL THEN 'admin@empresa.com' ELSE NULL END
+        )`
+        : `COALESCE(
+            u.email,
+            ${emailDesdeDetalleExpr},
+            CASE WHEN ${tipoNormalizadoExpr} LIKE 'LOGOUT%' AND ll.usuario_id IS NULL THEN 'admin@empresa.com' ELSE NULL END
+        )`;
+    const nombreNormalizadoExpr = `COALESCE(
+            u.nombre,
+            CASE WHEN ${emailNormalizadoExpr} = 'admin@empresa.com' THEN 'Administrador' ELSE NULL END
+        )`;
+
+    const condLogin = `${tipoNormalizadoExpr} LIKE 'LOGIN%' AND ${tipoNormalizadoExpr} NOT LIKE '%FAIL%'`;
+    const condLogout = `${tipoNormalizadoExpr} LIKE 'LOGOUT%' OR ${tipoNormalizadoExpr} = 'SALIDA'`;
+    const condFail = `${tipoNormalizadoExpr} LIKE '%FAIL%' OR ${tipoNormalizadoExpr} = 'INTENTO_FALLIDO'`;
 
     const [rows] = await pool.query(`
-        SELECT 
-            DATE_FORMAT(ll.${campoFecha}, '%Y-%m-%d') as fecha,
-            u.email,
-            u.nombre,
-            COUNT(CASE WHEN ll.${campoTipo} = 'LOGIN' THEN 1 END) as accesos,
-            COUNT(CASE WHEN ll.${campoTipo} = 'LOGOUT' THEN 1 END) as salidas,
-            COUNT(CASE WHEN ll.${campoTipo} = 'LOGIN_FAIL' THEN 1 END) as intentos_fallidos
-        FROM login_logout ll
-        LEFT JOIN usuarios u ON ll.usuario_id = u.id
-        WHERE ll.${campoFecha} >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-        GROUP BY DATE_FORMAT(ll.${campoFecha}, '%Y-%m-%d'), u.email, u.nombre, u.id
-        ORDER BY fecha DESC
+        SELECT
+            t.fecha,
+            t.email,
+            t.nombre,
+            CASE
+                WHEN t.email = 'admin@empresa.com' THEN GREATEST(t.accesos_raw, t.salidas)
+                ELSE t.accesos_raw
+            END AS accesos,
+            t.salidas,
+            t.intentos_fallidos
+        FROM (
+            SELECT
+                DATE_FORMAT(${fechaBaseExpr}, '%Y-%m-%d') AS fecha,
+                ${emailNormalizadoExpr} AS email,
+                ${nombreNormalizadoExpr} AS nombre,
+                SUM(CASE WHEN ${condLogin} THEN 1 ELSE 0 END) AS accesos_raw,
+                SUM(CASE WHEN ${condLogout} THEN 1 ELSE 0 END) AS salidas,
+                SUM(CASE WHEN ${condFail} THEN 1 ELSE 0 END) AS intentos_fallidos
+            FROM login_logout ll
+            LEFT JOIN usuarios u ON ll.usuario_id = u.id
+            WHERE ${fechaBaseExpr} >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            GROUP BY DATE_FORMAT(${fechaBaseExpr}, '%Y-%m-%d'), ${emailNormalizadoExpr}, ${nombreNormalizadoExpr}, u.id
+        ) t
+        ORDER BY t.fecha DESC
     `);
-    return rows;
+
+    const normalizado = (rows as any[]).map((row: any) => {
+        const accesos = Number(row?.accesos || 0);
+        const salidas = Number(row?.salidas || 0);
+        const fallidos = Number(row?.intentos_fallidos || 0);
+        const email = typeof row?.email === "string" ? row.email.trim() : "";
+        const nombre = typeof row?.nombre === "string" ? row.nombre.trim() : "";
+
+        // Compatibilidad con historial legacy: logouts anónimos del admin hardcodeado.
+        if (!email && !nombre && salidas > 0 && accesos === 0 && fallidos === 0) {
+            return {
+                ...row,
+                email: "admin@empresa.com",
+                nombre: "Administrador",
+                accesos: salidas
+            };
+        }
+
+        return {
+            ...row,
+            email: email || null,
+            nombre: nombre || null
+        };
+    });
+
+    return normalizado;
 }
 
 async function queryProductosMasVendidos() {

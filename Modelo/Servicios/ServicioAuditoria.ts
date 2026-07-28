@@ -8,6 +8,7 @@ export class ServicioAuditoria {
         campoTipo: "tipo" | "tipo_evento";
         campoFecha: "fecha_hora" | "fecha";
         tieneEmail: boolean;
+        tieneDetalle: boolean;
       }
     | null = null;
 
@@ -68,6 +69,7 @@ export class ServicioAuditoria {
     campoTipo: "tipo" | "tipo_evento";
     campoFecha: "fecha_hora" | "fecha";
     tieneEmail: boolean;
+    tieneDetalle: boolean;
   }> {
     if (this.loginLogoutConfig) {
       return this.loginLogoutConfig;
@@ -107,10 +109,21 @@ export class ServicioAuditoria {
 
     const columnas = new Set((columnRows as any[]).map((row: any) => String(row.COLUMN_NAME)));
 
+    if (!columnas.has("email")) {
+      try {
+        await pool.query(`ALTER TABLE login_logout ADD COLUMN email VARCHAR(100) NULL`);
+        columnas.add("email");
+      } catch (error) {
+        // Compatibilidad: si no se puede alterar, seguimos usando detalle como respaldo.
+        console.warn("[AUDITORIA] No se pudo agregar columna email en login_logout:", (error as any)?.message || error);
+      }
+    }
+
     this.loginLogoutConfig = {
       campoTipo: columnas.has("tipo") ? "tipo" : "tipo_evento",
       campoFecha: columnas.has("fecha_hora") ? "fecha_hora" : "fecha",
-      tieneEmail: columnas.has("email")
+      tieneEmail: columnas.has("email"),
+      tieneDetalle: columnas.has("detalle")
     };
 
     return this.loginLogoutConfig;
@@ -172,7 +185,7 @@ export class ServicioAuditoria {
   /**
    * Registra un login exitoso
    */
-  async registrarLogin(idUsuario: number): Promise<void> {
+  async registrarLogin(idUsuario: number, emailFallback?: string): Promise<void> {
     try {
       const pool = getPool();
       const config = await this.obtenerConfigLoginLogout();
@@ -181,15 +194,27 @@ export class ServicioAuditoria {
         [idUsuario]
       ) as any;
 
+      const usuarioIdRegistro = usuario ? idUsuario : null;
+      const emailRegistro = usuario?.email || emailFallback || null;
+
+      const detalleRegistro = !config.tieneEmail && emailFallback && config.tieneDetalle
+        ? `EMAIL:${emailFallback}`
+        : null;
+
       if (config.tieneEmail) {
         await pool.query(
           `INSERT INTO login_logout (usuario_id, email, ${config.campoTipo}) VALUES (?, ?, 'LOGIN')`,
-          [idUsuario, usuario?.email || null]
+          [usuarioIdRegistro, emailRegistro]
+        );
+      } else if (config.tieneDetalle && detalleRegistro) {
+        await pool.query(
+          `INSERT INTO login_logout (usuario_id, ${config.campoTipo}, detalle) VALUES (?, 'LOGIN', ?)`,
+          [usuarioIdRegistro, detalleRegistro]
         );
       } else {
         await pool.query(
           `INSERT INTO login_logout (usuario_id, ${config.campoTipo}) VALUES (?, 'LOGIN')`,
-          [idUsuario]
+          [usuarioIdRegistro]
         );
       }
       console.log(`✅ [LOGIN] Usuario ${idUsuario}`);
@@ -201,7 +226,7 @@ export class ServicioAuditoria {
   /**
    * Registra un logout
    */
-  async registrarLogout(idUsuario: number): Promise<void> {
+  async registrarLogout(idUsuario: number, emailFallback?: string): Promise<void> {
     try {
       const pool = getPool();
       const config = await this.obtenerConfigLoginLogout();
@@ -211,12 +236,21 @@ export class ServicioAuditoria {
       ) as any;
 
       const usuarioIdRegistro = usuario ? idUsuario : null;
-      const emailRegistro = usuario?.email || null;
+      const emailRegistro = usuario?.email || emailFallback || null;
+
+      const detalleRegistro = !config.tieneEmail && emailFallback && config.tieneDetalle
+        ? `EMAIL:${emailFallback}`
+        : null;
 
       if (config.tieneEmail) {
         await pool.query(
           `INSERT INTO login_logout (usuario_id, email, ${config.campoTipo}) VALUES (?, ?, 'LOGOUT')`,
           [usuarioIdRegistro, emailRegistro]
+        );
+      } else if (config.tieneDetalle && detalleRegistro) {
+        await pool.query(
+          `INSERT INTO login_logout (usuario_id, ${config.campoTipo}, detalle) VALUES (?, 'LOGOUT', ?)`,
+          [usuarioIdRegistro, detalleRegistro]
         );
       } else {
         await pool.query(
@@ -296,12 +330,26 @@ export class ServicioAuditoria {
     try {
       const pool = getPool();
       const config = await this.obtenerConfigLoginLogout();
+      const [columnRows] = await pool.query<any[]>(
+        `SELECT COLUMN_NAME
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'login_logout'`
+      );
+      const columnas = new Set((columnRows as any[]).map((row: any) => String(row.COLUMN_NAME)));
+      const tipoExpr = columnas.has("tipo") && columnas.has("tipo_evento")
+        ? `COALESCE(NULLIF(TRIM(ll.tipo), ''), NULLIF(TRIM(ll.tipo_evento), ''))`
+        : `ll.${config.campoTipo}`;
+      const fechaExpr = columnas.has("fecha_hora") && columnas.has("fecha")
+        ? `COALESCE(ll.fecha_hora, ll.fecha)`
+        : `ll.${config.campoFecha}`;
+
       const [rows] = await pool.query(
-        `SELECT ll.*, ll.${config.campoTipo} AS tipo_evento_normalizado, u.email, u.nombre 
+        `SELECT ll.*, ${tipoExpr} AS tipo_evento_normalizado, u.email, u.nombre 
          FROM login_logout ll
          LEFT JOIN usuarios u ON ll.usuario_id = u.id
-         WHERE ll.${config.campoFecha} >= DATE_SUB(NOW(), INTERVAL ? DAY)
-         ORDER BY ll.${config.campoFecha} DESC`,
+         WHERE ${fechaExpr} >= DATE_SUB(NOW(), INTERVAL ? DAY)
+         ORDER BY ${fechaExpr} DESC`,
         [dias]
       );
       return rows as any[];
