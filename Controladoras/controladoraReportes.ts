@@ -8,7 +8,7 @@ import { ReportePdfKey, generarReportePdf } from "../Modelo/Servicios/ServicioRe
 const repoOrden = RepositorioOrdenCompra.obtenerInstancia();
 const repoProveedor = RepositorioProveedor.obtenerInstancia();
 const repoVenta = RepositorioVenta.obtenerInstancia();
-const NOMBRE_LOCAL = "Almacen LeVain";
+const NOMBRE_LOCAL = "Almacen Manager";
 
 const MESES_ES = [
     "enero",
